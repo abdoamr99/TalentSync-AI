@@ -94,6 +94,11 @@ public class CoreConfigurations :
 
         builder.Property(cv => cv.FileName).HasMaxLength(256).IsRequired();
         builder.Property(cv => cv.StoredFilePath).HasMaxLength(500).IsRequired();
+        builder.Property(cv => cv.ContentType).HasMaxLength(100);
+        builder.Property(cv => cv.FileHash).HasMaxLength(64);
+
+        builder.HasIndex(cv => new { cv.CandidateProfileId, cv.IsPrimary });
+        builder.HasIndex(cv => new { cv.CandidateProfileId, cv.FileHash });
     }
 
     public void Configure(EntityTypeBuilder<TargetJobApplication> builder)
@@ -157,4 +162,3 @@ public class CoreConfigurations :
         builder.Property(p => p.Id).ValueGeneratedNever();
     }
 }
-

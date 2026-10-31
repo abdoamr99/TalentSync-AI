@@ -17,3 +17,4 @@ E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Infrastructure\obj\Debu
 E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Infrastructure\obj\Debug\net10.0\TalentSyncAI.Infrastructure.pdb
 E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Infrastructure\obj\Debug\net10.0\TalentSyncAI.Infrastructure.genruntimeconfig.cache
 E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Infrastructure\obj\Debug\net10.0\ref\TalentSyncAI.Infrastructure.dll
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Infrastructure\obj\Debug\net10.0\TalentSyncAI.Infrastructure.sourcelink.json

@@ -34,10 +34,10 @@ public static class DependencyInjection
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
 
-        // AI & Search & Storage Stubs
+        // AI & Search & Storage Services
         services.AddScoped<IAiService, StubAiService>();
         services.AddScoped<IVectorSearchService, StubVectorSearchService>();
-        services.AddSingleton<IFileStorageService, LocalFileStorageService>();
+        services.AddSingleton<IFileStorageService, FileStorageService>();
 
         // Health Checks
         services.AddHealthChecks()
@@ -46,4 +46,3 @@ public static class DependencyInjection
         return services;
     }
 }
-

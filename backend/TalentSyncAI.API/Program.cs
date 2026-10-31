@@ -1,22 +1,27 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using TalentSyncAI.API.Middleware;
 using TalentSyncAI.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Add Infrastructure Services (SQL Server, EF Core, Repositories, Security, Stubs)
 builder.Services.AddInfrastructureServices(builder.Configuration);
-
-// 2. Add HttpContextAccessor for user context resolution
 builder.Services.AddHttpContextAccessor();
-
-// 3. Add ProblemDetails & Global Exception Handler
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-// 4. Add Authentication & JWT Bearer
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(p =>
+    {
+        p.AllowAnyOrigin()
+         .AllowAnyHeader()
+         .AllowAnyMethod();
+    });
+});
+
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] ?? "SUPER_SECRET_KEY_FOR_LOCAL_DEV_TALENTSYNCAI_PLATFORM_2026_CHANGE_IN_PROD";
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "TalentSyncAI";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "TalentSyncAI_Client";
@@ -41,18 +46,33 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
-
-// 5. Add Controllers
 builder.Services.AddControllers();
 
-// 6. Add Swagger / OpenAPI
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    var securityScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter JWT Bearer token only (without 'Bearer ' prefix, Swagger UI adds it automatically)"
+    };
+
+    options.AddSecurityDefinition("Bearer", securityScheme);
+
+    options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
+    {
+        { new OpenApiSecuritySchemeReference("Bearer", doc), new List<string>() }
+    });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
 app.UseExceptionHandler();
+app.UseCors();
 
 if (app.Environment.IsDevelopment())
 {
@@ -60,14 +80,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
-// Multi-Tenancy Middleware (resolves X-Company-Id for B2B requests)
+app.MapGet("/", () => Results.Redirect("/swagger"));
 app.UseMiddleware<TenantMiddleware>();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 app.MapHealthChecks("/health");
 

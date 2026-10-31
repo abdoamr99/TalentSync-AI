@@ -176,3 +176,4 @@ E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.API\obj\Debug\net10.0\r
 E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.API\obj\Debug\net10.0\TalentSyncAI.API.pdb
 E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.API\obj\Debug\net10.0\TalentSyncAI.API.genruntimeconfig.cache
 E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.API\obj\Debug\net10.0\ref\TalentSyncAI.API.dll
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.API\obj\Debug\net10.0\TalentSyncAI.API.sourcelink.json

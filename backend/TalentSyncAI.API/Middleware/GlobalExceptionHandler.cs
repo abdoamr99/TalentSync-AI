@@ -54,4 +54,3 @@ public class GlobalExceptionHandler : IExceptionHandler
         return true;
     }
 }
-

@@ -13,3 +13,4 @@ E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\obj\Debug\n
 E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\obj\Debug\net10.0\refint\TalentSyncAI.Application.dll
 E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\obj\Debug\net10.0\TalentSyncAI.Application.pdb
 E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\obj\Debug\net10.0\ref\TalentSyncAI.Application.dll
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\obj\Debug\net10.0\TalentSyncAI.Application.sourcelink.json

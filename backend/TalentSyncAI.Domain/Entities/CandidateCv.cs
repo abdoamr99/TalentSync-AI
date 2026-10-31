@@ -22,7 +22,9 @@ public class CandidateCv : SoftDeletableEntity
     public long FileSizeBytes { get; set; }
     public bool IsPrimary { get; set; } = true;
 
+    [MaxLength(64)]
+    public string? FileHash { get; set; }
+
     public string? RawTextContent { get; set; } // Parsed text content
     public string? StructuredJson { get; set; } // Extracted profile schema
 }
-
