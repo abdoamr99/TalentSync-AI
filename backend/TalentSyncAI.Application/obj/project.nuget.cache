@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "dgSpecHash": "QV6K7ATmUls=",
+  "success": true,
+  "projectFilePath": "E:\\college\\GP\\TalentSyncAI back-end\\backend\\TalentSyncAI.Application\\TalentSyncAI.Application.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\AbdoAmr\\.nuget\\packages\\microsoft.entityframeworkcore\\10.0.14\\microsoft.entityframeworkcore.10.0.14.nupkg.sha512",
+    "C:\\Users\\AbdoAmr\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\10.0.14\\microsoft.entityframeworkcore.abstractions.10.0.14.nupkg.sha512",
+    "C:\\Users\\AbdoAmr\\.nuget\\packages\\microsoft.entityframeworkcore.analyzers\\10.0.14\\microsoft.entityframeworkcore.analyzers.10.0.14.nupkg.sha512",
+    "C:\\Users\\AbdoAmr\\.nuget\\packages\\microsoft.extensions.caching.abstractions\\10.0.14\\microsoft.extensions.caching.abstractions.10.0.14.nupkg.sha512",
+    "C:\\Users\\AbdoAmr\\.nuget\\packages\\microsoft.extensions.caching.memory\\10.0.14\\microsoft.extensions.caching.memory.10.0.14.nupkg.sha512",
+    "C:\\Users\\AbdoAmr\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\10.0.14\\microsoft.extensions.dependencyinjection.10.0.14.nupkg.sha512",
+    "C:\\Users\\AbdoAmr\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\10.0.14\\microsoft.extensions.dependencyinjection.abstractions.10.0.14.nupkg.sha512",
+    "C:\\Users\\AbdoAmr\\.nuget\\packages\\microsoft.extensions.logging\\10.0.14\\microsoft.extensions.logging.10.0.14.nupkg.sha512",
+    "C:\\Users\\AbdoAmr\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\10.0.14\\microsoft.extensions.logging.abstractions.10.0.14.nupkg.sha512",
+    "C:\\Users\\AbdoAmr\\.nuget\\packages\\microsoft.extensions.options\\10.0.14\\microsoft.extensions.options.10.0.14.nupkg.sha512",
+    "C:\\Users\\AbdoAmr\\.nuget\\packages\\microsoft.extensions.primitives\\10.0.14\\microsoft.extensions.primitives.10.0.14.nupkg.sha512"
+  ],
+  "logs": []
+}

@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/backend/">
+    <Project Path="backend/TalentSyncAI.API/TalentSyncAI.API.csproj" />
+    <Project Path="backend/TalentSyncAI.Application/TalentSyncAI.Application.csproj" />
+    <Project Path="backend/TalentSyncAI.Domain/TalentSyncAI.Domain.csproj" />
+    <Project Path="backend/TalentSyncAI.Infrastructure/TalentSyncAI.Infrastructure.csproj" />
+  </Folder>
+</Solution>

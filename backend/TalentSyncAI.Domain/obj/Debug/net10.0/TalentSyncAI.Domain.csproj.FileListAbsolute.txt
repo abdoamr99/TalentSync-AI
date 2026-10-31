@@ -1,0 +1,11 @@
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Domain\bin\Debug\net10.0\TalentSyncAI.Domain.deps.json
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Domain\bin\Debug\net10.0\TalentSyncAI.Domain.dll
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Domain\bin\Debug\net10.0\TalentSyncAI.Domain.pdb
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Domain\obj\Debug\net10.0\TalentSyncAI.Domain.GeneratedMSBuildEditorConfig.editorconfig
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Domain\obj\Debug\net10.0\TalentSyncAI.Domain.AssemblyInfoInputs.cache
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Domain\obj\Debug\net10.0\TalentSyncAI.Domain.AssemblyInfo.cs
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Domain\obj\Debug\net10.0\TalentSyncAI.Domain.csproj.CoreCompileInputs.cache
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Domain\obj\Debug\net10.0\TalentSyncAI.Domain.dll
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Domain\obj\Debug\net10.0\refint\TalentSyncAI.Domain.dll
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Domain\obj\Debug\net10.0\TalentSyncAI.Domain.pdb
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Domain\obj\Debug\net10.0\ref\TalentSyncAI.Domain.dll

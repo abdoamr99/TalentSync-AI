@@ -1,0 +1,15 @@
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\bin\Debug\net10.0\TalentSyncAI.Application.deps.json
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\bin\Debug\net10.0\TalentSyncAI.Application.dll
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\bin\Debug\net10.0\TalentSyncAI.Application.pdb
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\bin\Debug\net10.0\TalentSyncAI.Domain.dll
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\bin\Debug\net10.0\TalentSyncAI.Domain.pdb
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\obj\Debug\net10.0\TalentSyncAI.Application.csproj.AssemblyReference.cache
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\obj\Debug\net10.0\TalentSyncAI.Application.GeneratedMSBuildEditorConfig.editorconfig
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\obj\Debug\net10.0\TalentSyncAI.Application.AssemblyInfoInputs.cache
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\obj\Debug\net10.0\TalentSyncAI.Application.AssemblyInfo.cs
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\obj\Debug\net10.0\TalentSyncAI.Application.csproj.CoreCompileInputs.cache
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\obj\Debug\net10.0\TalentSy.B1E1B1B4.Up2Date
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\obj\Debug\net10.0\TalentSyncAI.Application.dll
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\obj\Debug\net10.0\refint\TalentSyncAI.Application.dll
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\obj\Debug\net10.0\TalentSyncAI.Application.pdb
+E:\college\GP\TalentSyncAI back-end\backend\TalentSyncAI.Application\obj\Debug\net10.0\ref\TalentSyncAI.Application.dll
