@@ -60,6 +60,13 @@ public class TargetJobApplicationsController : ControllerBase
 
         string rawJd = request.RawJobDescription ?? string.Empty;
 
+        // Sanitize optional Swagger defaults
+        var jobUrl = request.JobPostingUrl;
+        if (jobUrl == "string" || string.IsNullOrWhiteSpace(jobUrl))
+        {
+            jobUrl = null;
+        }
+
         // Process JD input based on type
         switch (request.JdInputType)
         {
@@ -77,24 +84,37 @@ public class TargetJobApplicationsController : ControllerBase
                 break;
 
             case JdInputType.Url:
-                if (string.IsNullOrWhiteSpace(request.JobPostingUrl) || !Uri.TryCreate(request.JobPostingUrl, UriKind.Absolute, out _))
+                if (string.IsNullOrWhiteSpace(jobUrl) || !Uri.TryCreate(jobUrl, UriKind.Absolute, out _))
                     return BadRequest("A valid Job Posting URL is required when input type is URL.");
 
-                if (string.IsNullOrWhiteSpace(rawJd))
-                    rawJd = $"Job posting parsed from {request.JobPostingUrl} for {request.TargetRole} at {request.TargetCompany}.";
+                if (string.IsNullOrWhiteSpace(rawJd) || rawJd == "string")
+                    rawJd = $"Job posting parsed from {jobUrl} for {request.TargetRole} at {request.TargetCompany}.";
                 break;
 
             case JdInputType.Text:
             default:
-                if (string.IsNullOrWhiteSpace(rawJd))
+                if (string.IsNullOrWhiteSpace(rawJd) || rawJd == "string")
                     return BadRequest("Job description text is required when input type is Text.");
                 break;
         }
 
-        // Resolve source CV (explicit or default to Candidate's primary CV)
+        // Resolve source CV (explicit, fallback for Swagger placeholder, or primary CV)
         Guid? sourceCvId = request.SourceCvId;
-        if (!sourceCvId.HasValue)
+        var swaggerDefaultGuid = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6");
+
+        if (sourceCvId.HasValue && sourceCvId.Value != Guid.Empty && sourceCvId.Value != swaggerDefaultGuid)
         {
+            var cvExists = await _context.CandidateResumes
+                .AnyAsync(c => c.Id == sourceCvId.Value && c.CandidateProfileId == profile.Id, cancellationToken);
+
+            if (!cvExists)
+            {
+                return BadRequest($"The specified SourceCvId '{sourceCvId}' was not found for this candidate profile.");
+            }
+        }
+        else
+        {
+            // Default to candidate's primary CV, or latest uploaded CV
             var primaryCv = await _context.CandidateResumes
                 .Where(c => c.CandidateProfileId == profile.Id)
                 .OrderByDescending(c => c.IsPrimary)
@@ -111,7 +131,7 @@ public class TargetJobApplicationsController : ControllerBase
             TargetCompany = request.TargetCompany.Trim(),
             TargetRole = request.TargetRole.Trim(),
             JdInputType = request.JdInputType,
-            JobPostingUrl = request.JobPostingUrl?.Trim(),
+            JobPostingUrl = jobUrl?.Trim(),
             RawJobDescription = rawJd.Trim()
         };
 

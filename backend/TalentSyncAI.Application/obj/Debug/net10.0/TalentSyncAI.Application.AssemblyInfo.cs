@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TalentSyncAI.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+063f7c35b018842431de7fe4a936400d3187b2fb")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+849c37d2decd787be1dcf65ff5ca418dc147f2d4")]
 [assembly: System.Reflection.AssemblyProductAttribute("TalentSyncAI.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TalentSyncAI.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
