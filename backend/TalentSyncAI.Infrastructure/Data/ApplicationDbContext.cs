@@ -14,18 +14,19 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public ApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options,
         ITenantContext tenantContext,
-        ICurrentUserService currentUserService) : base(options)
+        ICurrentUserService currentUserService)
+        : base(options)
     {
         _tenantContext = tenantContext;
         _currentUserService = currentUserService;
     }
 
-    // Identity & Core
+    // Core Identity & Tenancy
     public DbSet<User> Users => Set<User>();
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<CompanyMember> CompanyMembers => Set<CompanyMember>();
 
-    // Candidate Side (NextRole)
+    // Candidate Aggregate (B2C NextRole style)
     public DbSet<CandidateProfile> CandidateProfiles => Set<CandidateProfile>();
     public DbSet<CandidateCv> CandidateResumes => Set<CandidateCv>();
     public DbSet<TargetJobApplication> TargetJobApplications => Set<TargetJobApplication>();
@@ -34,9 +35,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<TailoredResume> TailoredResumes => Set<TailoredResume>();
     public DbSet<InterviewPreparation> InterviewPreparations => Set<InterviewPreparation>();
 
-    // Company / Recruiter CV Pool & Natural Language Search
-    public DbSet<CompanyCandidate> CompanyCandidates => Set<CompanyCandidate>();
+    // Company CV Pool & Search (B2B Workspace)
     public DbSet<CompanyCvDocument> CompanyCvDocuments => Set<CompanyCvDocument>();
+    public DbSet<CompanyCandidate> CompanyCandidates => Set<CompanyCandidate>();
     public DbSet<CompanyCandidateSkill> CompanyCandidateSkills => Set<CompanyCandidateSkill>();
     public DbSet<CompanyCandidateExperience> CompanyCandidateExperiences => Set<CompanyCandidateExperience>();
     public DbSet<CompanyCandidateEducation> CompanyCandidateEducations => Set<CompanyCandidateEducation>();
@@ -45,7 +46,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<CompanyShortlist> CompanyShortlists => Set<CompanyShortlist>();
     public DbSet<CompanyShortlistCandidate> CompanyShortlistCandidates => Set<CompanyShortlistCandidate>();
 
-    // AI & Audit
+    // Audit & Observability
     public DbSet<AiProcessingRun> AiProcessingRuns => Set<AiProcessingRun>();
     public DbSet<RecruiterAction> RecruiterActions => Set<RecruiterAction>();
 
@@ -61,13 +62,27 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<CandidateCv>().HasQueryFilter(e => !e.IsDeleted && !e.CandidateProfile.IsDeleted);
         modelBuilder.Entity<TargetJobApplication>().HasQueryFilter(e => !e.IsDeleted && !e.CandidateProfile.IsDeleted);
 
+        // Matching Child Filters for TargetJobApplication
+        modelBuilder.Entity<JobMatchAnalysis>().HasQueryFilter(e => !e.TargetJobApplication.IsDeleted);
+        modelBuilder.Entity<TailoredResume>().HasQueryFilter(e => !e.TargetJobApplication.IsDeleted);
+        modelBuilder.Entity<InterviewPreparation>().HasQueryFilter(e => !e.TargetJobApplication.IsDeleted);
+        modelBuilder.Entity<CompanyRoleResearch>().HasQueryFilter(e => !e.TargetJobApplication.IsDeleted);
+
         // 2. Strict Tenant-Scoped Filters for Company Pool
         modelBuilder.Entity<CompanyCandidate>().HasQueryFilter(e => !e.IsDeleted && (!_tenantContext.HasTenant || e.CompanyId == _tenantContext.CompanyId));
         modelBuilder.Entity<CompanyCvDocument>().HasQueryFilter(e => !e.IsDeleted && (!_tenantContext.HasTenant || e.CompanyId == _tenantContext.CompanyId));
         modelBuilder.Entity<CompanyShortlist>().HasQueryFilter(e => !e.IsDeleted && (!_tenantContext.HasTenant || e.CompanyId == _tenantContext.CompanyId));
 
+        // Matching Child Filters for CompanyCandidate
+        modelBuilder.Entity<CompanyCandidateSkill>().HasQueryFilter(e => !e.CompanyCandidate.IsDeleted);
+        modelBuilder.Entity<CompanyCandidateExperience>().HasQueryFilter(e => !e.CompanyCandidate.IsDeleted);
+        modelBuilder.Entity<CompanyCandidateEducation>().HasQueryFilter(e => !e.CompanyCandidate.IsDeleted);
+
+        // Tenant Scoped Operations
         modelBuilder.Entity<CompanyMember>().HasQueryFilter(e => !_tenantContext.HasTenant || e.CompanyId == _tenantContext.CompanyId);
         modelBuilder.Entity<CandidateSearch>().HasQueryFilter(e => !_tenantContext.HasTenant || e.CompanyId == _tenantContext.CompanyId);
+        modelBuilder.Entity<CandidateSearchResult>().HasQueryFilter(e => !_tenantContext.HasTenant || e.CandidateSearch.CompanyId == _tenantContext.CompanyId);
+        modelBuilder.Entity<CompanyShortlistCandidate>().HasQueryFilter(e => !e.AddedByUser.IsDeleted && !e.CompanyCandidate.IsDeleted);
         modelBuilder.Entity<AiProcessingRun>().HasQueryFilter(e => !_tenantContext.HasTenant || e.CompanyId == _tenantContext.CompanyId);
         modelBuilder.Entity<RecruiterAction>().HasQueryFilter(e => !_tenantContext.HasTenant || e.CompanyId == _tenantContext.CompanyId);
     }
@@ -79,27 +94,17 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
         foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
         {
-            if (entry.State == EntityState.Added)
+            switch (entry.State)
             {
-                entry.Entity.CreatedAtUtc = now;
-                entry.Entity.CreatedByUserId ??= currentUserId;
-            }
-            else if (entry.State == EntityState.Modified)
-            {
-                entry.Entity.UpdatedAtUtc = now;
-                entry.Entity.UpdatedByUserId = currentUserId;
-            }
-        }
+                case EntityState.Added:
+                    entry.Entity.CreatedAtUtc = now;
+                    entry.Entity.CreatedByUserId = currentUserId;
+                    break;
 
-        if (_tenantContext.HasTenant)
-        {
-            foreach (var entry in ChangeTracker.Entries<ITenantScoped>())
-            {
-                if (entry.State == EntityState.Added && entry.Entity.CompanyId == Guid.Empty)
-                {
-                    var property = entry.Property("CompanyId");
-                    property.CurrentValue = _tenantContext.CompanyId!.Value;
-                }
+                case EntityState.Modified:
+                    entry.Entity.UpdatedAtUtc = now;
+                    entry.Entity.UpdatedByUserId = currentUserId;
+                    break;
             }
         }
 

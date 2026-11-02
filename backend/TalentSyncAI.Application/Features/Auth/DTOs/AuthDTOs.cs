@@ -11,8 +11,10 @@ public class RegisterRequest
     public string Email { get; set; } = string.Empty;
 
     [Required]
-    [MinLength(6)]
+    [MinLength(8, ErrorMessage = "Password must be at least 8 characters long.")]
     [MaxLength(100)]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{8,}$",
+        ErrorMessage = "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")]
     public string Password { get; set; } = string.Empty;
 
     [Required]
@@ -57,4 +59,3 @@ public class AuthResponse
     public string RefreshToken { get; set; } = string.Empty;
     public DateTime ExpiresAtUtc { get; set; }
 }
-

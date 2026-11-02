@@ -29,7 +29,7 @@ public class CandidateCvController : ControllerBase
 
     /// <summary>
     /// Uploads a new CV for the authenticated candidate (NextRole style).
-    /// Supports PDF, DOCX, DOC, and TXT (max 10MB).
+    /// Validates magic bytes, file extensions (.pdf, .docx, .doc, .txt), and size bounds (16B - 10MB).
     /// </summary>
     [HttpPost("upload")]
     [Consumes("multipart/form-data")]
@@ -47,30 +47,18 @@ public class CandidateCvController : ControllerBase
             return BadRequest("A valid non-empty file is required.");
         }
 
-        if (file.Length > FileValidationHelper.DefaultMaxFileSize)
+        // Validate file content, length, extension, and magic bytes
+        using var stream = file.OpenReadStream();
+        var (isValid, errorMessage) = FileValidationHelper.ValidateFile(stream, file.FileName, file.Length);
+        if (!isValid)
         {
-            return BadRequest($"File size exceeds the allowed limit of {FileValidationHelper.DefaultMaxFileSize / (1024 * 1024)} MB.");
+            return BadRequest(errorMessage);
         }
 
-        if (!FileValidationHelper.IsAllowedExtension(file.FileName))
-        {
-            return BadRequest("Unsupported file format. Allowed extensions: .pdf, .docx, .doc, .txt.");
-        }
-
-        var candidateProfile = await _context.CandidateProfiles
-            .FirstOrDefaultAsync(c => c.UserId == userId.Value, cancellationToken);
-
-        if (candidateProfile == null)
-        {
-            return BadRequest("Candidate profile does not exist for the authenticated user.");
-        }
+        var candidateProfile = await GetOrCreateCandidateProfileAsync(userId.Value, cancellationToken);
 
         // Compute SHA-256 hash for deduplication check
-        string fileHash;
-        using (var stream = file.OpenReadStream())
-        {
-            fileHash = await FileValidationHelper.ComputeSha256HashAsync(stream, cancellationToken);
-        }
+        var fileHash = await FileValidationHelper.ComputeSha256HashAsync(stream, cancellationToken);
 
         var existingDuplicate = await _context.CandidateResumes
             .FirstOrDefaultAsync(cv => cv.CandidateProfileId == candidateProfile.Id && cv.FileHash == fileHash, cancellationToken);
@@ -85,37 +73,34 @@ public class CandidateCvController : ControllerBase
         }
 
         // Store file organized in subfolder: candidates/{profileId}
-        string storedRelativePath;
-        using (var stream = file.OpenReadStream())
-        {
-            storedRelativePath = await _fileStorageService.UploadFileAsync(
-                stream,
-                file.FileName,
-                file.ContentType,
-                subFolder: $"candidates/{candidateProfile.Id}",
-                cancellationToken: cancellationToken);
-        }
+        var storedRelativePath = await _fileStorageService.UploadFileAsync(
+            stream,
+            file.FileName,
+            file.ContentType,
+            subFolder: $"candidates/{candidateProfile.Id}",
+            cancellationToken: cancellationToken);
 
         // If setting as primary, demote any previous primary CV
         if (setAsPrimary)
         {
-            var previousPrimaryCvs = await _context.CandidateResumes
+            var previousPrimaries = await _context.CandidateResumes
                 .Where(cv => cv.CandidateProfileId == candidateProfile.Id && cv.IsPrimary)
                 .ToListAsync(cancellationToken);
 
-            foreach (var prev in previousPrimaryCvs)
+            foreach (var prev in previousPrimaries)
             {
                 prev.IsPrimary = false;
             }
         }
-
-        // Extract raw text preview if it's plain text (or ready for AI extractor)
-        string? rawTextPreview = null;
-        if (Path.GetExtension(file.FileName).Equals(".txt", StringComparison.OrdinalIgnoreCase))
+        else
         {
-            using var reader = new StreamReader(file.OpenReadStream());
-            var fullText = await reader.ReadToEndAsync(cancellationToken);
-            rawTextPreview = fullText.Length > 500 ? fullText[..500] : fullText;
+            var hasAnyCv = await _context.CandidateResumes
+                .AnyAsync(cv => cv.CandidateProfileId == candidateProfile.Id, cancellationToken);
+
+            if (!hasAnyCv)
+            {
+                setAsPrimary = true;
+            }
         }
 
         var candidateCv = new CandidateCv
@@ -126,14 +111,13 @@ public class CandidateCvController : ControllerBase
             ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType,
             FileSizeBytes = file.Length,
             IsPrimary = setAsPrimary,
-            FileHash = fileHash,
-            RawTextContent = rawTextPreview
+            FileHash = fileHash
         };
 
         _context.CandidateResumes.Add(candidateCv);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return CreatedAtAction(nameof(GetCvById), new { id = candidateCv.Id }, new CandidateCvDto
+        var dto = new CandidateCvDto
         {
             Id = candidateCv.Id,
             FileName = candidateCv.FileName,
@@ -142,8 +126,10 @@ public class CandidateCvController : ControllerBase
             IsPrimary = candidateCv.IsPrimary,
             FileHash = candidateCv.FileHash,
             CreatedAtUtc = candidateCv.CreatedAtUtc,
-            RawTextPreview = rawTextPreview
-        });
+            RawTextPreview = candidateCv.RawTextContent
+        };
+
+        return CreatedAtAction(nameof(GetCvById), new { id = candidateCv.Id }, dto);
     }
 
     /// <summary>
@@ -155,13 +141,7 @@ public class CandidateCvController : ControllerBase
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
-        var candidateProfile = await _context.CandidateProfiles
-            .FirstOrDefaultAsync(c => c.UserId == userId.Value, cancellationToken);
-
-        if (candidateProfile == null)
-        {
-            return NotFound("Candidate profile not found.");
-        }
+        var candidateProfile = await GetOrCreateCandidateProfileAsync(userId.Value, cancellationToken);
 
         var cvs = await _context.CandidateResumes
             .Where(cv => cv.CandidateProfileId == candidateProfile.Id)
@@ -176,9 +156,7 @@ public class CandidateCvController : ControllerBase
                 IsPrimary = cv.IsPrimary,
                 FileHash = cv.FileHash,
                 CreatedAtUtc = cv.CreatedAtUtc,
-                RawTextPreview = cv.RawTextContent != null && cv.RawTextContent.Length > 200 
-                    ? cv.RawTextContent.Substring(0, 200) + "..." 
-                    : cv.RawTextContent
+                RawTextPreview = cv.RawTextContent
             })
             .ToListAsync(cancellationToken);
 
@@ -186,7 +164,7 @@ public class CandidateCvController : ControllerBase
     }
 
     /// <summary>
-    /// Gets metadata for a specific CV belonging to the candidate.
+    /// Gets metadata for a specific candidate CV by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<CandidateCvDto>> GetCvById(Guid id, CancellationToken cancellationToken)
@@ -194,31 +172,30 @@ public class CandidateCvController : ControllerBase
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
-        var candidateProfile = await _context.CandidateProfiles
-            .FirstOrDefaultAsync(c => c.UserId == userId.Value, cancellationToken);
-
-        if (candidateProfile == null) return NotFound("Candidate profile not found.");
+        var candidateProfile = await GetOrCreateCandidateProfileAsync(userId.Value, cancellationToken);
 
         var cv = await _context.CandidateResumes
-            .FirstOrDefaultAsync(c => c.Id == id && c.CandidateProfileId == candidateProfile.Id, cancellationToken);
+            .Where(c => c.Id == id && c.CandidateProfileId == candidateProfile.Id)
+            .Select(c => new CandidateCvDto
+            {
+                Id = c.Id,
+                FileName = c.FileName,
+                ContentType = c.ContentType,
+                FileSizeBytes = c.FileSizeBytes,
+                IsPrimary = c.IsPrimary,
+                FileHash = c.FileHash,
+                CreatedAtUtc = c.CreatedAtUtc,
+                RawTextPreview = c.RawTextContent
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (cv == null) return NotFound("CV document not found.");
 
-        return Ok(new CandidateCvDto
-        {
-            Id = cv.Id,
-            FileName = cv.FileName,
-            ContentType = cv.ContentType,
-            FileSizeBytes = cv.FileSizeBytes,
-            IsPrimary = cv.IsPrimary,
-            FileHash = cv.FileHash,
-            CreatedAtUtc = cv.CreatedAtUtc,
-            RawTextPreview = cv.RawTextContent
-        });
+        return Ok(cv);
     }
 
     /// <summary>
-    /// Downloads the original CV file.
+    /// Downloads the physical file of a candidate CV.
     /// </summary>
     [HttpGet("{id:guid}/download")]
     public async Task<IActionResult> DownloadCv(Guid id, CancellationToken cancellationToken)
@@ -226,54 +203,54 @@ public class CandidateCvController : ControllerBase
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
-        var candidateProfile = await _context.CandidateProfiles
-            .FirstOrDefaultAsync(c => c.UserId == userId.Value, cancellationToken);
-
-        if (candidateProfile == null) return NotFound("Candidate profile not found.");
+        var candidateProfile = await GetOrCreateCandidateProfileAsync(userId.Value, cancellationToken);
 
         var cv = await _context.CandidateResumes
             .FirstOrDefaultAsync(c => c.Id == id && c.CandidateProfileId == candidateProfile.Id, cancellationToken);
 
         if (cv == null) return NotFound("CV document not found.");
 
+        var exists = await _fileStorageService.FileExistsAsync(cv.StoredFilePath, cancellationToken);
+        if (!exists)
+        {
+            return NotFound("The physical file is missing from storage.");
+        }
+
         var stream = await _fileStorageService.DownloadFileAsync(cv.StoredFilePath, cancellationToken);
         return File(stream, cv.ContentType, cv.FileName);
     }
 
     /// <summary>
-    /// Sets a specific CV as the primary resume for this candidate.
+    /// Sets a specific CV as the primary resume for the candidate.
     /// </summary>
     [HttpPut("{id:guid}/set-primary")]
-    public async Task<IActionResult> SetAsPrimary(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> SetPrimaryCv(Guid id, CancellationToken cancellationToken)
     {
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
-        var candidateProfile = await _context.CandidateProfiles
-            .FirstOrDefaultAsync(c => c.UserId == userId.Value, cancellationToken);
-
-        if (candidateProfile == null) return NotFound("Candidate profile not found.");
+        var candidateProfile = await GetOrCreateCandidateProfileAsync(userId.Value, cancellationToken);
 
         var targetCv = await _context.CandidateResumes
             .FirstOrDefaultAsync(c => c.Id == id && c.CandidateProfileId == candidateProfile.Id, cancellationToken);
 
         if (targetCv == null) return NotFound("CV document not found.");
 
-        var allCvs = await _context.CandidateResumes
+        var allProfileCvs = await _context.CandidateResumes
             .Where(c => c.CandidateProfileId == candidateProfile.Id)
             .ToListAsync(cancellationToken);
 
-        foreach (var cv in allCvs)
+        foreach (var cv in allProfileCvs)
         {
             cv.IsPrimary = (cv.Id == id);
         }
 
         await _context.SaveChangesAsync(cancellationToken);
-        return Ok(new { message = $"CV '{targetCv.FileName}' set as primary successfully." });
+        return Ok(new { message = $"CV '{targetCv.FileName}' set as primary resume." });
     }
 
     /// <summary>
-    /// Soft-deletes a CV document and marks it as deleted.
+    /// Soft-deletes a candidate CV and cleans up storage.
     /// </summary>
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteCv(Guid id, CancellationToken cancellationToken)
@@ -281,10 +258,7 @@ public class CandidateCvController : ControllerBase
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
-        var candidateProfile = await _context.CandidateProfiles
-            .FirstOrDefaultAsync(c => c.UserId == userId.Value, cancellationToken);
-
-        if (candidateProfile == null) return NotFound("Candidate profile not found.");
+        var candidateProfile = await GetOrCreateCandidateProfileAsync(userId.Value, cancellationToken);
 
         var cv = await _context.CandidateResumes
             .FirstOrDefaultAsync(c => c.Id == id && c.CandidateProfileId == candidateProfile.Id, cancellationToken);
@@ -295,11 +269,35 @@ public class CandidateCvController : ControllerBase
         cv.DeletedAtUtc = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
-
-        // Optionally delete the underlying physical file
         await _fileStorageService.DeleteFileAsync(cv.StoredFilePath, cancellationToken);
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Resolves candidate profile or creates one on the fly (Lazy creation) from user account data.
+    /// </summary>
+    private async Task<CandidateProfile> GetOrCreateCandidateProfileAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var profile = await _context.CandidateProfiles
+            .FirstOrDefaultAsync(c => c.UserId == userId, cancellationToken);
+
+        if (profile != null) return profile;
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        profile = new CandidateProfile
+        {
+            UserId = userId,
+            FirstName = user?.FirstName ?? "Candidate",
+            LastName = user?.LastName ?? "User",
+            Email = user?.Email ?? "candidate@talentsync.ai",
+            Phone = user?.PhoneNumber
+        };
+
+        _context.CandidateProfiles.Add(profile);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return profile;
     }
 }
 
@@ -307,4 +305,3 @@ public class UploadCandidateCvRequest
 {
     public IFormFile File { get; set; } = null!;
 }
-
