@@ -18,12 +18,29 @@ public class CurrentUserService : ICurrentUserService
         get
         {
             var userIdClaim = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
+            if (Guid.TryParse(userIdClaim, out var userId)) return userId;
+
+            // DEV TESTING FALLBACK (JWT Disabled / Bypass mode):
+            var path = _httpContextAccessor.HttpContext?.Request.Path.Value?.ToLowerInvariant() ?? "";
+            if (path.Contains("/api/company"))
+            {
+                // Sara Recruiter member of TechCorp Solutions
+                return Guid.Parse("01A1920B-BB54-78EE-AA25-895CE7C1248C");
+            }
+
+            // Test Candidate
+            return Guid.Parse("01a1925a-1825-7eaa-acb4-416264bf7202");
         }
     }
 
-    public string? Email => _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Email)?.Value;
+    public string? Email
+    {
+        get
+        {
+            var emailClaim = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Email)?.Value;
+            return emailClaim ?? "test.user@talentsync.ai";
+        }
+    }
 
-    public bool IsAuthenticated => _httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated ?? false;
+    public bool IsAuthenticated => true;
 }
-
