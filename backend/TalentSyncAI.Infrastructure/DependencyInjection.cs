@@ -37,6 +37,7 @@ public static class DependencyInjection
         // AI & Search & Storage Services
         services.AddScoped<IAiService, StubAiService>();
         services.AddScoped<ICandidateAiService, CandidateAiService>();
+        services.AddScoped<IPdfGeneratorService, PdfGeneratorService>();
         services.AddScoped<IVectorSearchService, StubVectorSearchService>();
         services.AddSingleton<IFileStorageService, FileStorageService>();
 

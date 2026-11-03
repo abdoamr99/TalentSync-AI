@@ -18,6 +18,7 @@ public class TargetJobApplicationsController : ControllerBase
     private readonly ICurrentUserService _currentUserService;
     private readonly ICandidateAiService _aiService;
     private readonly IFileStorageService _fileStorageService;
+    private readonly IPdfGeneratorService _pdfGeneratorService;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -29,12 +30,14 @@ public class TargetJobApplicationsController : ControllerBase
         IApplicationDbContext context,
         ICurrentUserService currentUserService,
         ICandidateAiService aiService,
-        IFileStorageService fileStorageService)
+        IFileStorageService fileStorageService,
+        IPdfGeneratorService pdfGeneratorService)
     {
         _context = context;
         _currentUserService = currentUserService;
         _aiService = aiService;
         _fileStorageService = fileStorageService;
+        _pdfGeneratorService = pdfGeneratorService;
     }
 
     /// <summary>
@@ -333,6 +336,45 @@ public class TargetJobApplicationsController : ControllerBase
         await _context.SaveChangesAsync(cancellationToken);
 
         return Ok(tailoredDto);
+    }
+
+    /// <summary>
+    /// Downloads the tailored resume compiled as an ATS-friendly, professional PDF document.
+    /// </summary>
+    [HttpGet("{id:guid}/tailor-resume/download")]
+    public async Task<IActionResult> DownloadTailoredResumePdf(Guid id, CancellationToken cancellationToken = default)
+    {
+        var application = await GetApplicationWithProfileAsync(id, cancellationToken);
+        if (application == null) return NotFound("Target job application not found.");
+
+        var tailored = await _context.TailoredResumes
+            .FirstOrDefaultAsync(t => t.TargetJobApplicationId == application.Id, cancellationToken);
+
+        if (tailored == null || string.IsNullOrWhiteSpace(tailored.TailoredMarkdown))
+        {
+            // If not tailored yet, generate it automatically
+            var tailorResult = await TailorResume(id, cancellationToken);
+            tailored = await _context.TailoredResumes
+                .FirstOrDefaultAsync(t => t.TargetJobApplicationId == application.Id, cancellationToken);
+
+            if (tailored == null)
+            {
+                return BadRequest("Tailored resume has not been generated for this application yet.");
+            }
+        }
+
+        var candidateProfile = await _context.CandidateProfiles
+            .FirstOrDefaultAsync(p => p.Id == application.CandidateProfileId, cancellationToken);
+
+        var candidateName = candidateProfile != null ? $"{candidateProfile.FirstName} {candidateProfile.LastName}".Trim() : "Candidate";
+
+        var pdfBytes = await _pdfGeneratorService.GenerateResumePdfAsync(
+            candidateName, application.TargetRole, application.TargetCompany, tailored.TailoredMarkdown, cancellationToken);
+
+        var safeCompany = string.Concat(application.TargetCompany.Split(Path.GetInvalidFileNameChars())).Replace(" ", "_");
+        var fileName = $"{candidateName.Replace(" ", "_")}_Resume_{safeCompany}.pdf";
+
+        return File(pdfBytes, "application/pdf", fileName);
     }
 
     /// <summary>

@@ -94,6 +94,254 @@
     ]
   },
   {
+    "ContainingType": "TalentSyncAI.API.Controllers.TargetJobApplicationsController",
+    "Method": "CreateApplication",
+    "RelativePath": "api/candidate/applications",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "File",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      },
+      {
+        "Name": "TargetCompany",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "TargetRole",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "JdInputType",
+        "Type": "TalentSyncAI.Domain.Enums.JdInputType",
+        "IsRequired": false
+      },
+      {
+        "Name": "JobPostingUrl",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "RawJobDescription",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "SourceCvId",
+        "Type": "System.Nullable\u00601[[System.Guid, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "TalentSyncAI.Application.Features.TargetJobs.DTOs.TargetJobApplicationDetailDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TalentSyncAI.API.Controllers.TargetJobApplicationsController",
+    "Method": "ListApplications",
+    "RelativePath": "api/candidate/applications",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.List\u00601[[TalentSyncAI.Application.Features.TargetJobs.DTOs.TargetJobApplicationListDto, TalentSyncAI.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TalentSyncAI.API.Controllers.TargetJobApplicationsController",
+    "Method": "GetApplicationById",
+    "RelativePath": "api/candidate/applications/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "TalentSyncAI.Application.Features.TargetJobs.DTOs.TargetJobApplicationDetailDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TalentSyncAI.API.Controllers.TargetJobApplicationsController",
+    "Method": "DeleteApplication",
+    "RelativePath": "api/candidate/applications/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TalentSyncAI.API.Controllers.TargetJobApplicationsController",
+    "Method": "GenerateAllArtifacts",
+    "RelativePath": "api/candidate/applications/{id}/generate-all",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "TalentSyncAI.Application.Features.TargetJobs.DTOs.TargetJobApplicationDetailDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TalentSyncAI.API.Controllers.TargetJobApplicationsController",
+    "Method": "PrepareInterview",
+    "RelativePath": "api/candidate/applications/{id}/interview-prep",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "TalentSyncAI.Application.Features.TargetJobs.DTOs.InterviewPreparationDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TalentSyncAI.API.Controllers.TargetJobApplicationsController",
+    "Method": "AnalyzeJobMatch",
+    "RelativePath": "api/candidate/applications/{id}/match",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "TalentSyncAI.Application.Features.TargetJobs.DTOs.JobMatchAnalysisDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TalentSyncAI.API.Controllers.TargetJobApplicationsController",
+    "Method": "ResearchCompany",
+    "RelativePath": "api/candidate/applications/{id}/research",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "TalentSyncAI.Application.Features.TargetJobs.DTOs.CompanyRoleResearchDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TalentSyncAI.API.Controllers.TargetJobApplicationsController",
+    "Method": "TailorResume",
+    "RelativePath": "api/candidate/applications/{id}/tailor-resume",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "TalentSyncAI.Application.Features.TargetJobs.DTOs.TailoredResumeDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
     "ContainingType": "TalentSyncAI.API.Controllers.CandidateCvController",
     "Method": "GetAllMyCvs",
     "RelativePath": "api/candidate/cv",
@@ -173,7 +421,7 @@
   },
   {
     "ContainingType": "TalentSyncAI.API.Controllers.CandidateCvController",
-    "Method": "SetAsPrimary",
+    "Method": "SetPrimaryCv",
     "RelativePath": "api/candidate/cv/{id}/set-primary",
     "HttpMethod": "PUT",
     "IsController": true,
@@ -220,7 +468,7 @@
   },
   {
     "ContainingType": "TalentSyncAI.API.Controllers.CompanyCvController",
-    "Method": "GetCompanyCvs",
+    "Method": "GetCompanyCvPool",
     "RelativePath": "api/company/cv",
     "HttpMethod": "GET",
     "IsController": true,
@@ -256,7 +504,7 @@
   },
   {
     "ContainingType": "TalentSyncAI.API.Controllers.CompanyCvController",
-    "Method": "GetCvById",
+    "Method": "GetCompanyCvById",
     "RelativePath": "api/company/cv/{id}",
     "HttpMethod": "GET",
     "IsController": true,
@@ -282,7 +530,7 @@
   },
   {
     "ContainingType": "TalentSyncAI.API.Controllers.CompanyCvController",
-    "Method": "DeleteCv",
+    "Method": "DeleteCompanyCv",
     "RelativePath": "api/company/cv/{id}",
     "HttpMethod": "DELETE",
     "IsController": true,
@@ -298,7 +546,7 @@
   },
   {
     "ContainingType": "TalentSyncAI.API.Controllers.CompanyCvController",
-    "Method": "DownloadCv",
+    "Method": "DownloadCompanyCv",
     "RelativePath": "api/company/cv/{id}/download",
     "HttpMethod": "GET",
     "IsController": true,

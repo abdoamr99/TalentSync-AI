@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -9,15 +10,26 @@ namespace TalentSyncAI.Infrastructure.Services;
 public class CandidateAiService : ICandidateAiService
 {
     private readonly IConfiguration _configuration;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<CandidateAiService> _logger;
 
-    public CandidateAiService(IConfiguration configuration, ILogger<CandidateAiService> logger)
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        PropertyNameCaseInsensitive = true
+    };
+
+    public CandidateAiService(
+        IConfiguration configuration,
+        IHttpClientFactory httpClientFactory,
+        ILogger<CandidateAiService> logger)
     {
         _configuration = configuration;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
 
-    public Task<JobMatchAnalysisDto> AnalyzeJobMatchAsync(
+    public async Task<JobMatchAnalysisDto> AnalyzeJobMatchAsync(
         string cvText,
         string jobTitle,
         string companyName,
@@ -26,8 +38,40 @@ public class CandidateAiService : ICandidateAiService
     {
         _logger.LogInformation("Analyzing Job Match for role: {JobTitle} at {Company}", jobTitle, companyName);
 
-        // Realistic AI matching response conforming to agreement schema
-        var result = new JobMatchAnalysisDto
+        var enableLiveAi = _configuration.GetValue<bool>("AiService:EnableLiveAi");
+        var baseUrl = _configuration.GetValue<string>("AiService:BaseUrl") ?? "http://localhost:8000";
+
+        if (enableLiveAi)
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.BaseAddress = new Uri(baseUrl);
+                client.Timeout = TimeSpan.FromSeconds(_configuration.GetValue<int>("AiService:TimeoutSeconds", 60));
+
+                var payload = new
+                {
+                    cv_text = cvText,
+                    target_role = jobTitle,
+                    target_company = companyName,
+                    raw_job_description = jobDescription
+                };
+
+                var response = await client.PostAsJsonAsync("/api/ai/match", payload, cancellationToken);
+                if (response.IsSuccessStatusCode)
+                {
+                    var liveResult = await response.Content.ReadFromJsonAsync<JobMatchAnalysisDto>(JsonOptions, cancellationToken);
+                    if (liveResult != null) return liveResult;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Live AI match request to {BaseUrl} failed. Falling back to local mock engine.", baseUrl);
+            }
+        }
+
+        // Realistic Fallback/Mock Data
+        return new JobMatchAnalysisDto
         {
             MatchScore = 86.5m,
             MatchVerdict = $"Strong Fit for {jobTitle} at {companyName}",
@@ -69,11 +113,9 @@ public class CandidateAiService : ICandidateAiService
             },
             AnalyzedAtUtc = DateTime.UtcNow
         };
-
-        return Task.FromResult(result);
     }
 
-    public Task<CompanyRoleResearchDto> ResearchCompanyAsync(
+    public async Task<CompanyRoleResearchDto> ResearchCompanyAsync(
         string companyName,
         string jobTitle,
         string? jobPostingUrl,
@@ -82,7 +124,39 @@ public class CandidateAiService : ICandidateAiService
     {
         _logger.LogInformation("Conducting Hiring Recon on {Company} for role {JobTitle}", companyName, jobTitle);
 
-        var result = new CompanyRoleResearchDto
+        var enableLiveAi = _configuration.GetValue<bool>("AiService:EnableLiveAi");
+        var baseUrl = _configuration.GetValue<string>("AiService:BaseUrl") ?? "http://localhost:8000";
+
+        if (enableLiveAi)
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.BaseAddress = new Uri(baseUrl);
+                client.Timeout = TimeSpan.FromSeconds(_configuration.GetValue<int>("AiService:TimeoutSeconds", 60));
+
+                var payload = new
+                {
+                    target_company = companyName,
+                    target_role = jobTitle,
+                    job_posting_url = jobPostingUrl,
+                    raw_job_description = jobDescription
+                };
+
+                var response = await client.PostAsJsonAsync("/api/ai/recon", payload, cancellationToken);
+                if (response.IsSuccessStatusCode)
+                {
+                    var liveResult = await response.Content.ReadFromJsonAsync<CompanyRoleResearchDto>(JsonOptions, cancellationToken);
+                    if (liveResult != null) return liveResult;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Live AI company recon request to {BaseUrl} failed. Falling back to local mock engine.", baseUrl);
+            }
+        }
+
+        return new CompanyRoleResearchDto
         {
             CompanyOverview = new CompanyOverviewDto
             {
@@ -118,11 +192,9 @@ public class CandidateAiService : ICandidateAiService
             },
             ResearchedAtUtc = DateTime.UtcNow
         };
-
-        return Task.FromResult(result);
     }
 
-    public Task<TailoredResumeDto> TailorResumeAsync(
+    public async Task<TailoredResumeDto> TailorResumeAsync(
         string cvText,
         string jobTitle,
         string companyName,
@@ -131,7 +203,39 @@ public class CandidateAiService : ICandidateAiService
     {
         _logger.LogInformation("Generating Tailored Resume for {JobTitle} at {Company}", jobTitle, companyName);
 
-        var result = new TailoredResumeDto
+        var enableLiveAi = _configuration.GetValue<bool>("AiService:EnableLiveAi");
+        var baseUrl = _configuration.GetValue<string>("AiService:BaseUrl") ?? "http://localhost:8000";
+
+        if (enableLiveAi)
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.BaseAddress = new Uri(baseUrl);
+                client.Timeout = TimeSpan.FromSeconds(_configuration.GetValue<int>("AiService:TimeoutSeconds", 60));
+
+                var payload = new
+                {
+                    cv_text = cvText,
+                    target_role = jobTitle,
+                    target_company = companyName,
+                    raw_job_description = jobDescription
+                };
+
+                var response = await client.PostAsJsonAsync("/api/ai/tailor", payload, cancellationToken);
+                if (response.IsSuccessStatusCode)
+                {
+                    var liveResult = await response.Content.ReadFromJsonAsync<TailoredResumeDto>(JsonOptions, cancellationToken);
+                    if (liveResult != null) return liveResult;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Live AI resume tailoring request to {BaseUrl} failed. Falling back to local mock engine.", baseUrl);
+            }
+        }
+
+        return new TailoredResumeDto
         {
             TailoredHeadline = $"{jobTitle} | High-Impact Software Engineering Specialist",
             TailoredSummary = $"Accomplished professional with a proven track record of architecting resilient, scalable systems and driving product excellence. Passionate about bringing targeted expertise in modern engineering practices to drive immediate value for {companyName}.",
@@ -172,11 +276,9 @@ Accomplished professional with deep expertise in designing resilient software ar
             GeneratedPdfUrl = null,
             GeneratedAtUtc = DateTime.UtcNow
         };
-
-        return Task.FromResult(result);
     }
 
-    public Task<InterviewPreparationDto> PrepareInterviewAsync(
+    public async Task<InterviewPreparationDto> PrepareInterviewAsync(
         string cvText,
         string jobTitle,
         string companyName,
@@ -185,7 +287,39 @@ Accomplished professional with deep expertise in designing resilient software ar
     {
         _logger.LogInformation("Generating Interview Prep for {JobTitle} at {Company}", jobTitle, companyName);
 
-        var result = new InterviewPreparationDto
+        var enableLiveAi = _configuration.GetValue<bool>("AiService:EnableLiveAi");
+        var baseUrl = _configuration.GetValue<string>("AiService:BaseUrl") ?? "http://localhost:8000";
+
+        if (enableLiveAi)
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.BaseAddress = new Uri(baseUrl);
+                client.Timeout = TimeSpan.FromSeconds(_configuration.GetValue<int>("AiService:TimeoutSeconds", 60));
+
+                var payload = new
+                {
+                    cv_text = cvText,
+                    target_role = jobTitle,
+                    target_company = companyName,
+                    raw_job_description = jobDescription
+                };
+
+                var response = await client.PostAsJsonAsync("/api/ai/prep", payload, cancellationToken);
+                if (response.IsSuccessStatusCode)
+                {
+                    var liveResult = await response.Content.ReadFromJsonAsync<InterviewPreparationDto>(JsonOptions, cancellationToken);
+                    if (liveResult != null) return liveResult;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Live AI interview prep request to {BaseUrl} failed. Falling back to local mock engine.", baseUrl);
+            }
+        }
+
+        return new InterviewPreparationDto
         {
             ElevatorPitch60Seconds = $"I am an experienced engineer focused on designing scalable, maintainable architectures. Over my career, I have specialized in building robust backend services and solving high-throughput performance bottlenecks. I am particularly excited about {companyName} because of your focus on engineering excellence and high-impact technology, and I am eager to contribute directly to the {jobTitle} initiatives.",
             InterviewRoundsPrep = new List<InterviewRoundPrepDto>
@@ -244,8 +378,5 @@ Accomplished professional with deep expertise in designing resilient software ar
             },
             PreparedAtUtc = DateTime.UtcNow
         };
-
-        return Task.FromResult(result);
     }
 }
-

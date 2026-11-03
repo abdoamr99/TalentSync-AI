@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TalentSyncAI.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+849c37d2decd787be1dcf65ff5ca418dc147f2d4")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+34f7b0108874c53e95a2f6910345b2dfb292a2b3")]
 [assembly: System.Reflection.AssemblyProductAttribute("TalentSyncAI.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TalentSyncAI.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
