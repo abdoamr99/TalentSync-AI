@@ -128,15 +128,16 @@ Navigate to:
 
 ---
 
-## 📚 Documentation & Deliverables
+## 📚 Architecture & Documentation Guides
 
-Comprehensive specifications and integration blueprints are located in the [`reports/`](./reports) directory:
-* **`TalentSyncAI_Complete_Candidate_Lifecycle_and_AI_Guide.pdf`** — Full end-to-end candidate lifecycle and AI protocol guide.
-* **`TalentSyncAI_API_Endpoints_and_Architecture_Guide.pdf`** — Complete technical reference for all endpoints and file mappings.
-* **`TalentSyncAI_Backend_AI_Integration_Simple.pdf`** — Direct AI integration reference for the Python/FastAPI team.
-* **`TalentSyncAI_Candidate_AI_Backend_Schemas.pdf`** — JSON Schemas and data contracts specification.
+The project includes complete architectural and integration guides covering:
+* **Candidate Lifecycle & AI Protocol** — Full end-to-end candidate lifecycle and AI pipeline guide.
+* **API Endpoints & Architecture Reference** — Complete technical reference for all endpoints, payloads, and file structure.
+* **Backend AI Integration Blueprint** — Direct AI integration reference for the Python/FastAPI team.
+* **Data Contracts & Schemas** — JSON Schemas and communication contracts between .NET Core and FastAPI.
 
 ---
 
 ## 📄 License
 This project is licensed under the MIT License.
+

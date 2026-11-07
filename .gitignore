@@ -51,3 +51,8 @@ scratch/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Project Documentation & Reports (Keep locally, do not push to repository)
+reports/
+*.pdf
+
