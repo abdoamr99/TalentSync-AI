@@ -1,1 +1,0 @@
-DevOps Engineer with Kubernetes, Docker, Terraform, AWS CI/CD pipelines.

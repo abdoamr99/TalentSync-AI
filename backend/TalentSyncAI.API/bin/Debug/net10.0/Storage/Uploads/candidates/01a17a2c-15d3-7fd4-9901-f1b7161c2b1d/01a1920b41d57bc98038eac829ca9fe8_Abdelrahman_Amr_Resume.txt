@@ -1,1 +1,0 @@
-Abdelrahman Amr - Senior .NET Backend Developer with 5 years experience in ASP.NET Core, EF Core, SQL Server, Docker.
