@@ -56,3 +56,23 @@ desktop.ini
 reports/
 *.pdf
 
+# Python / AI Service
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+ai-service/.env
+*.env
+!*.env.example
+
+
