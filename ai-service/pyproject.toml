@@ -1,0 +1,53 @@
+[dependency-groups]
+dev = [
+  "pytest>=8.3.0",
+  "pytest-asyncio>=0.25.0",
+  "ruff>=0.9.0",
+]
+
+[project]
+name = "talentsync-ai"
+version = "0.1.0"
+description = "TalentSyncAI stateless AI service for candidate workflows"
+requires-python = ">=3.13"
+dependencies = [
+  "fastapi>=0.115.0",
+  "httpx>=0.28.0",
+  "jinja2>=3.1.5",
+  "langchain>=1.4.0",
+  "langchain-openai>=1.1.0",
+  "llama-cloud>=2.15.0",
+  "pydantic>=2.10.0",
+  "pydantic-settings>=2.7.0",
+  "python-dotenv>=1.0.1",
+  "python-multipart>=0.0.20",
+  "pyyaml>=6.0.2",
+  "tavily-python>=0.5.0",
+  "tenacity>=9.0.0",
+  "uvicorn>=0.34.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+exclude = [
+  ".git",
+  ".ruff_cache",
+  ".venv",
+  "venv",
+  "*.md",
+]
+force-exclude = true
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["B008", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]

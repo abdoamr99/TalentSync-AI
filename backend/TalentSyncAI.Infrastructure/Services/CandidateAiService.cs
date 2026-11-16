@@ -29,6 +29,23 @@ public class CandidateAiService : ICandidateAiService
         _logger = logger;
     }
 
+    private HttpClient CreateAiHttpClient()
+    {
+        var client = _httpClientFactory.CreateClient();
+        var baseUrl = _configuration.GetValue<string>("AiService:BaseUrl") ?? "http://localhost:8000";
+        var apiKey = _configuration.GetValue<string>("AiService:InternalApiKey") ?? "dev-internal-api-key";
+        var timeoutSeconds = _configuration.GetValue<int>("AiService:TimeoutSeconds", 120);
+
+        client.BaseAddress = new Uri(baseUrl);
+        client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+        if (!string.IsNullOrWhiteSpace(apiKey))
+        {
+            client.DefaultRequestHeaders.Remove("X-Internal-Api-Key");
+            client.DefaultRequestHeaders.Add("X-Internal-Api-Key", apiKey);
+        }
+        return client;
+    }
+
     public async Task<JobMatchAnalysisDto> AnalyzeJobMatchAsync(
         string cvText,
         string jobTitle,
@@ -45,9 +62,7 @@ public class CandidateAiService : ICandidateAiService
         {
             try
             {
-                var client = _httpClientFactory.CreateClient();
-                client.BaseAddress = new Uri(baseUrl);
-                client.Timeout = TimeSpan.FromSeconds(_configuration.GetValue<int>("AiService:TimeoutSeconds", 60));
+                var client = CreateAiHttpClient();
 
                 var payload = new
                 {
@@ -57,7 +72,13 @@ public class CandidateAiService : ICandidateAiService
                     raw_job_description = jobDescription
                 };
 
-                var response = await client.PostAsJsonAsync("/api/ai/match", payload, cancellationToken);
+                // Try standard v1 candidate endpoint, fallback to legacy if needed
+                var response = await client.PostAsJsonAsync("/v1/candidate/match", payload, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    response = await client.PostAsJsonAsync("/api/ai/match", payload, cancellationToken);
+                }
+
                 if (response.IsSuccessStatusCode)
                 {
                     var liveResult = await response.Content.ReadFromJsonAsync<JobMatchAnalysisDto>(JsonOptions, cancellationToken);
@@ -131,19 +152,26 @@ public class CandidateAiService : ICandidateAiService
         {
             try
             {
-                var client = _httpClientFactory.CreateClient();
-                client.BaseAddress = new Uri(baseUrl);
-                client.Timeout = TimeSpan.FromSeconds(_configuration.GetValue<int>("AiService:TimeoutSeconds", 60));
+                var client = CreateAiHttpClient();
 
                 var payload = new
                 {
+                    company_name = companyName,
                     target_company = companyName,
+                    job_title = jobTitle,
                     target_role = jobTitle,
+                    job_url = jobPostingUrl,
                     job_posting_url = jobPostingUrl,
+                    extra_context = jobDescription,
                     raw_job_description = jobDescription
                 };
 
-                var response = await client.PostAsJsonAsync("/api/ai/recon", payload, cancellationToken);
+                var response = await client.PostAsJsonAsync("/v1/candidate/research", payload, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    response = await client.PostAsJsonAsync("/api/ai/recon", payload, cancellationToken);
+                }
+
                 if (response.IsSuccessStatusCode)
                 {
                     var liveResult = await response.Content.ReadFromJsonAsync<CompanyRoleResearchDto>(JsonOptions, cancellationToken);
@@ -210,9 +238,7 @@ public class CandidateAiService : ICandidateAiService
         {
             try
             {
-                var client = _httpClientFactory.CreateClient();
-                client.BaseAddress = new Uri(baseUrl);
-                client.Timeout = TimeSpan.FromSeconds(_configuration.GetValue<int>("AiService:TimeoutSeconds", 60));
+                var client = CreateAiHttpClient();
 
                 var payload = new
                 {
@@ -222,7 +248,12 @@ public class CandidateAiService : ICandidateAiService
                     raw_job_description = jobDescription
                 };
 
-                var response = await client.PostAsJsonAsync("/api/ai/tailor", payload, cancellationToken);
+                var response = await client.PostAsJsonAsync("/v1/candidate/tailor", payload, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    response = await client.PostAsJsonAsync("/api/ai/tailor", payload, cancellationToken);
+                }
+
                 if (response.IsSuccessStatusCode)
                 {
                     var liveResult = await response.Content.ReadFromJsonAsync<TailoredResumeDto>(JsonOptions, cancellationToken);
@@ -294,9 +325,7 @@ Accomplished professional with deep expertise in designing resilient software ar
         {
             try
             {
-                var client = _httpClientFactory.CreateClient();
-                client.BaseAddress = new Uri(baseUrl);
-                client.Timeout = TimeSpan.FromSeconds(_configuration.GetValue<int>("AiService:TimeoutSeconds", 60));
+                var client = CreateAiHttpClient();
 
                 var payload = new
                 {
@@ -306,7 +335,12 @@ Accomplished professional with deep expertise in designing resilient software ar
                     raw_job_description = jobDescription
                 };
 
-                var response = await client.PostAsJsonAsync("/api/ai/prep", payload, cancellationToken);
+                var response = await client.PostAsJsonAsync("/v1/candidate/prep", payload, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    response = await client.PostAsJsonAsync("/api/ai/prep", payload, cancellationToken);
+                }
+
                 if (response.IsSuccessStatusCode)
                 {
                     var liveResult = await response.Content.ReadFromJsonAsync<InterviewPreparationDto>(JsonOptions, cancellationToken);

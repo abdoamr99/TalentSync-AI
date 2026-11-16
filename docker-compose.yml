@@ -1,0 +1,91 @@
+services:
+  # -------------------------------------------------------------
+  # 1. SQL Server Database
+  # -------------------------------------------------------------
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: talentsyncai-db
+    restart: unless-stopped
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Passw0rd!
+      - MSSQL_PID=Developer
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong@Passw0rd!' -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - talentsyncai-net
+
+  # -------------------------------------------------------------
+  # 2. AI Service (Python / FastAPI)
+  # -------------------------------------------------------------
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: talentsyncai-ai-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-dev-internal-api-key}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - LLAMA_CLOUD_API_KEY=${LLAMA_CLOUD_API_KEY:-}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - talentsyncai-net
+
+  # -------------------------------------------------------------
+  # 3. Backend Web API (ASP.NET Core / .NET 10)
+  # -------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: talentsyncai-backend
+    restart: unless-stopped
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=TalentSyncAIDb;User Id=sa;Password=YourStrong@Passw0rd!;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - AiService__BaseUrl=http://ai-service:8000
+      - AiService__InternalApiKey=${INTERNAL_API_KEY:-dev-internal-api-key}
+      - AiService__EnableLiveAi=true
+      - Storage__UploadDirectory=/app/Storage/Uploads
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+    volumes:
+      - backend_uploads:/app/Storage/Uploads
+    networks:
+      - talentsyncai-net
+
+volumes:
+  sqlserver_data:
+    name: talentsyncai_sqlserver_data
+  backend_uploads:
+    name: talentsyncai_backend_uploads
+
+networks:
+  talentsyncai-net:
+    name: talentsyncai-network
+    driver: bridge
