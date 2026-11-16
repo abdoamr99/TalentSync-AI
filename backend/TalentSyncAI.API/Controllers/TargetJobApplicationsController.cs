@@ -257,7 +257,11 @@ public class TargetJobApplicationsController : ControllerBase
         }
 
         existingAnalysis.MatchScore = analysisDto.MatchScore;
-        existingAnalysis.MatchingStrengths = JsonSerializer.Serialize(analysisDto.StrengthsAnalysis, JsonOptions);
+        existingAnalysis.MatchingStrengths = JsonSerializer.Serialize(new
+        {
+            strengths = analysisDto.StrengthsAnalysis,
+            recommendations = analysisDto.StrategicRecommendations
+        }, JsonOptions);
         existingAnalysis.SkillGaps = JsonSerializer.Serialize(analysisDto.SkillGaps, JsonOptions);
         existingAnalysis.OverallAssessment = analysisDto.MatchVerdict;
         existingAnalysis.AnalyzedAtUtc = analysisDto.AnalyzedAtUtc;
@@ -294,7 +298,11 @@ public class TargetJobApplicationsController : ControllerBase
         existingResearch.CompanyOverview = JsonSerializer.Serialize(researchDto.CompanyOverview, JsonOptions);
         existingResearch.TechStackInsights = JsonSerializer.Serialize(researchDto.TechStackIntelligence, JsonOptions);
         existingResearch.CultureAndValues = JsonSerializer.Serialize(researchDto.CultureAndValues, JsonOptions);
-        existingResearch.TypicalInterviewProcess = JsonSerializer.Serialize(researchDto.InterviewProcessInsights, JsonOptions);
+        existingResearch.TypicalInterviewProcess = JsonSerializer.Serialize(new
+        {
+            rounds = researchDto.InterviewProcessInsights?.StandardRounds,
+            killer_questions = researchDto.KillerQuestionsToAskThem
+        }, JsonOptions);
         existingResearch.ResearchedAtUtc = researchDto.ResearchedAtUtc;
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -329,7 +337,13 @@ public class TargetJobApplicationsController : ControllerBase
         }
 
         existingTailored.TailoredMarkdown = tailoredDto.FullMarkdownContent;
-        existingTailored.ChangesExplanation = tailoredDto.TailoredSummary;
+        existingTailored.ChangesExplanation = JsonSerializer.Serialize(new
+        {
+            headline = tailoredDto.TailoredHeadline,
+            summary = tailoredDto.TailoredSummary,
+            optimized_skills = tailoredDto.OptimizedSkills,
+            bullets = tailoredDto.TailoredExperienceBulletPoints
+        }, JsonOptions);
         existingTailored.GeneratedPdfPath = tailoredDto.GeneratedPdfUrl;
         existingTailored.GeneratedAtUtc = tailoredDto.GeneratedAtUtc;
 
@@ -514,7 +528,22 @@ public class TargetJobApplicationsController : ControllerBase
 
             if (!string.IsNullOrWhiteSpace(app.MatchAnalysis.MatchingStrengths))
             {
-                try { matchDto.StrengthsAnalysis = JsonSerializer.Deserialize<List<StrengthItemDto>>(app.MatchAnalysis.MatchingStrengths, JsonOptions) ?? new(); } catch { }
+                try
+                {
+                    if (app.MatchAnalysis.MatchingStrengths.TrimStart().StartsWith('{'))
+                    {
+                        using var doc = JsonDocument.Parse(app.MatchAnalysis.MatchingStrengths);
+                        if (doc.RootElement.TryGetProperty("strengths", out var sProp))
+                            matchDto.StrengthsAnalysis = JsonSerializer.Deserialize<List<StrengthItemDto>>(sProp.GetRawText(), JsonOptions) ?? new();
+                        if (doc.RootElement.TryGetProperty("recommendations", out var rProp))
+                            matchDto.StrategicRecommendations = JsonSerializer.Deserialize<List<string>>(rProp.GetRawText(), JsonOptions) ?? new();
+                    }
+                    else
+                    {
+                        matchDto.StrengthsAnalysis = JsonSerializer.Deserialize<List<StrengthItemDto>>(app.MatchAnalysis.MatchingStrengths, JsonOptions) ?? new();
+                    }
+                }
+                catch { }
             }
             if (!string.IsNullOrWhiteSpace(app.MatchAnalysis.SkillGaps))
             {
@@ -544,7 +573,27 @@ public class TargetJobApplicationsController : ControllerBase
             }
             if (!string.IsNullOrWhiteSpace(app.CompanyResearch.TypicalInterviewProcess))
             {
-                try { reconDto.InterviewProcessInsights = JsonSerializer.Deserialize<InterviewProcessInsightsDto>(app.CompanyResearch.TypicalInterviewProcess, JsonOptions); } catch { }
+                try
+                {
+                    if (app.CompanyResearch.TypicalInterviewProcess.TrimStart().StartsWith('{'))
+                    {
+                        using var doc = JsonDocument.Parse(app.CompanyResearch.TypicalInterviewProcess);
+                        if (doc.RootElement.TryGetProperty("rounds", out var roundsProp))
+                        {
+                            var rounds = JsonSerializer.Deserialize<List<InterviewRoundDto>>(roundsProp.GetRawText(), JsonOptions) ?? new();
+                            reconDto.InterviewProcessInsights = new InterviewProcessInsightsDto { StandardRounds = rounds };
+                        }
+                        if (doc.RootElement.TryGetProperty("killer_questions", out var questionsProp))
+                        {
+                            reconDto.KillerQuestionsToAskThem = JsonSerializer.Deserialize<List<string>>(questionsProp.GetRawText(), JsonOptions) ?? new();
+                        }
+                    }
+                    else
+                    {
+                        reconDto.InterviewProcessInsights = JsonSerializer.Deserialize<InterviewProcessInsightsDto>(app.CompanyResearch.TypicalInterviewProcess, JsonOptions);
+                    }
+                }
+                catch { }
             }
         }
 
@@ -554,10 +603,32 @@ public class TargetJobApplicationsController : ControllerBase
             tailoredDto = new TailoredResumeDto
             {
                 FullMarkdownContent = app.TailoredResume.TailoredMarkdown,
-                TailoredSummary = app.TailoredResume.ChangesExplanation ?? string.Empty,
                 GeneratedPdfUrl = app.TailoredResume.GeneratedPdfPath,
                 GeneratedAtUtc = app.TailoredResume.GeneratedAtUtc
             };
+
+            if (!string.IsNullOrWhiteSpace(app.TailoredResume.ChangesExplanation))
+            {
+                if (app.TailoredResume.ChangesExplanation.TrimStart().StartsWith('{'))
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(app.TailoredResume.ChangesExplanation);
+                        if (doc.RootElement.TryGetProperty("headline", out var hProp)) tailoredDto.TailoredHeadline = hProp.GetString() ?? string.Empty;
+                        if (doc.RootElement.TryGetProperty("summary", out var sProp)) tailoredDto.TailoredSummary = sProp.GetString() ?? string.Empty;
+                        if (doc.RootElement.TryGetProperty("optimized_skills", out var oProp)) tailoredDto.OptimizedSkills = JsonSerializer.Deserialize<OptimizedSkillsDto>(oProp.GetRawText(), JsonOptions);
+                        if (doc.RootElement.TryGetProperty("bullets", out var bProp)) tailoredDto.TailoredExperienceBulletPoints = JsonSerializer.Deserialize<List<TailoredExperienceBlockDto>>(bProp.GetRawText(), JsonOptions) ?? new();
+                    }
+                    catch
+                    {
+                        tailoredDto.TailoredSummary = app.TailoredResume.ChangesExplanation;
+                    }
+                }
+                else
+                {
+                    tailoredDto.TailoredSummary = app.TailoredResume.ChangesExplanation;
+                }
+            }
         }
 
         InterviewPreparationDto? prepDto = null;

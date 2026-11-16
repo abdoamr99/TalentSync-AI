@@ -143,42 +143,7 @@ public class CandidateAiService : ICandidateAiService
             }
         }
 
-        return new CompanyRoleResearchDto
-        {
-            CompanyOverview = new CompanyOverviewDto
-            {
-                Industry = "Technology / Intelligent Software Platforms",
-                Mission = $"Empowering modern organizations through innovative technology and customer-first solutions at {companyName}.",
-                RecentNewsOrMilestones = "Expanding engineering footprint and scaling core distributed platform services."
-            },
-            TechStackIntelligence = new TechStackIntelligenceDto
-            {
-                PrimaryLanguages = new List<string> { "C# / .NET", "TypeScript", "Python", "SQL" },
-                CloudInfrastructure = "Modern Cloud Platforms (Docker, Kubernetes, CI/CD Pipelines)",
-                Databases = new List<string> { "Relational SQL (SQL Server / PostgreSQL)", "Redis Caching", "Vector Storage" }
-            },
-            CultureAndValues = new CultureAndValuesDto
-            {
-                CoreValues = new List<string> { "High Ownership", "Engineering Excellence", "Continuous Learning", "Transparency" },
-                WorkEnvironment = "Collaborative, agile engineering teams with emphasis on clean code, automated testing, and rapid feedback loops."
-            },
-            InterviewProcessInsights = new InterviewProcessInsightsDto
-            {
-                StandardRounds = new List<InterviewRoundDto>
-                {
-                    new() { RoundIndex = 1, Name = "Initial Screen", Focus = "Background alignment, career goals, and communication skills" },
-                    new() { RoundIndex = 2, Name = "Technical Deep-Dive", Focus = $"Core engineering concepts, architecture, and practical scenarios for {jobTitle}" },
-                    new() { RoundIndex = 3, Name = "Behavioral & Cultural Fit", Focus = "Teamwork, handling ambiguity, and values alignment" }
-                }
-            },
-            KillerQuestionsToAskThem = new List<string>
-            {
-                $"What are the most challenging technical initiatives your team at {companyName} is tackling this quarter?",
-                "How does the engineering department balance rapid feature shipping with system reliability and technical debt?",
-                "What does success look like in the first 90 days for someone stepping into this role?"
-            },
-            ResearchedAtUtc = DateTime.UtcNow
-        };
+        return ComputeDynamicCompanyResearch(companyName, jobTitle, jobPostingUrl, jobDescription);
     }
 
     public async Task<TailoredResumeDto> TailorResumeAsync(
@@ -225,47 +190,7 @@ public class CandidateAiService : ICandidateAiService
             }
         }
 
-        return new TailoredResumeDto
-        {
-            TailoredHeadline = $"{jobTitle} | High-Impact Software Engineering Specialist",
-            TailoredSummary = $"Accomplished professional with a proven track record of architecting resilient, scalable systems and driving product excellence. Passionate about bringing targeted expertise in modern engineering practices to drive immediate value for {companyName}.",
-            OptimizedSkills = new OptimizedSkillsDto
-            {
-                TopMatchingSkills = new List<string> { "Modern Backend Engineering", "Clean Architecture", "RESTful APIs", "Relational Databases", "Performance Optimization" },
-                SecondarySkills = new List<string> { "Docker & Containerization", "CI/CD Workflows", "Unit & Integration Testing", "Agile Methodologies" }
-            },
-            TailoredExperienceBulletPoints = new List<TailoredExperienceBlockDto>
-            {
-                new()
-                {
-                    Company = "Previous Enterprise Experience",
-                    JobTitle = jobTitle,
-                    OptimizedBullets = new List<string>
-                    {
-                        $"Architected and shipped mission-critical service endpoints, improving overall response times by 35%.",
-                        $"Enforced Clean Architecture and robust unit testing standards, elevating code test coverage and system stability.",
-                        $"Partnered cross-functionally with product managers and engineers to deliver features aligned with business KPIs."
-                    }
-                }
-            },
-            FullMarkdownContent = $@"# Candidate Resume
-**Target Role:** {jobTitle} at {companyName}
-
-## Professional Summary
-Accomplished professional with deep expertise in designing resilient software architectures and scaling distributed systems.
-
-## Core Technical Competencies
-- **Primary:** Modern Software Architecture, REST APIs, Database Optimization, Distributed Systems
-- **Tools & Practices:** Docker, Git, CI/CD, Agile / Scrum
-
-## Professional Experience
-### {jobTitle}
-- Spearheaded delivery of high-throughput backend services and data workflows.
-- Improved database indexing and query patterns to reduce query execution latency by over 30%.
-- Mentored junior engineers and advocated for clean code design patterns.",
-            GeneratedPdfUrl = null,
-            GeneratedAtUtc = DateTime.UtcNow
-        };
+        return ComputeDynamicTailorResume(cvText, jobTitle, companyName, jobDescription);
     }
 
     public async Task<InterviewPreparationDto> PrepareInterviewAsync(
@@ -312,65 +237,7 @@ Accomplished professional with deep expertise in designing resilient software ar
             }
         }
 
-        return new InterviewPreparationDto
-        {
-            ElevatorPitch60Seconds = $"I am an experienced engineer focused on designing scalable, maintainable architectures. Over my career, I have specialized in building robust backend services and solving high-throughput performance bottlenecks. I am particularly excited about {companyName} because of your focus on engineering excellence and high-impact technology, and I am eager to contribute directly to the {jobTitle} initiatives.",
-            InterviewRoundsPrep = new List<InterviewRoundPrepDto>
-            {
-                new()
-                {
-                    RoundName = "Technical System Architecture",
-                    KeyFocusAreas = new List<string> { "System Design", "Database Indexing & Caching", "API Design Best Practices" },
-                    LikelyQuestions = new List<string>
-                    {
-                        $"How would you design a scalable service to handle high concurrency requests for {companyName}?",
-                        "How do you ensure data consistency and handle transient failures across services?",
-                        "Can you explain a challenging performance optimization you diagnosed and resolved?"
-                    },
-                    StarStories = new List<StarStoryDto>
-                    {
-                        new()
-                        {
-                            StoryTitle = "Resolving Production Ingestion Bottlenecks",
-                            TargetSkill = "Performance Optimization & Problem Solving",
-                            Situation = "Our data ingestion endpoint experienced memory spikes and intermittent timeouts during peak load periods.",
-                            Task = "Identify the bottleneck and redesign the ingestion pipeline without breaking client contracts.",
-                            Action = "Profiled memory allocations, transitioned from buffering whole payloads in memory to stream-based processing with streaming hashes, and introduced query optimizations.",
-                            Result = "Reduced service memory footprint by 55% and eliminated all peak-load timeout incidents."
-                        }
-                    }
-                }
-            },
-            DayOfBattlecard = new DayOfBattlecardDto
-            {
-                KeyStrengthsToEmphasize = new List<string>
-                {
-                    $"Deep mastery of modern engineering principles directly applicable to {jobTitle}.",
-                    "Strong background in schema design, caching strategies, and performance tuning.",
-                    "Collaborative, pragmatic approach to system design and team delivery."
-                },
-                PotentialRedFlagsAndCounters = new List<RedFlagCounterDto>
-                {
-                    new()
-                    {
-                        AnticipatedDoubt = "Familiarity with niche proprietary tooling",
-                        CounterResponse = "Emphasize rapid learning agility, strong conceptual foundations, and demonstrable history of adopting new frameworks quickly."
-                    }
-                },
-                QuestionsToAskInterviewers = new List<string>
-                {
-                    $"What is the most critical technical milestone the {jobTitle} role will be measured on in the first six months?",
-                    "How does your team foster technical innovation while maintaining continuous delivery stability?"
-                }
-            },
-            TimeBoxedStudyPlan = new List<StudyPlanDayDto>
-            {
-                new() { Day = 1, Task = $"Review core architectural patterns, concurrency mechanisms, and data access principles for {jobTitle}." },
-                new() { Day = 2, Task = $"Rehearse the 60-second pitch and practice the STAR stories out loud." },
-                new() { Day = 3, Task = $"Review {companyName}'s product offerings and finalize the high-impact questions to ask the interviewers." }
-            },
-            PreparedAtUtc = DateTime.UtcNow
-        };
+        return ComputeDynamicInterviewPrep(cvText, jobTitle, companyName, jobDescription);
     }
 
     private static readonly string[] CatalogedSkills =
@@ -520,6 +387,307 @@ Accomplished professional with deep expertise in designing resilient software ar
             SkillGaps = gaps,
             StrategicRecommendations = recommendations,
             AnalyzedAtUtc = DateTime.UtcNow
+        };
+    }
+
+    private static List<string> DetectSkills(string? text)
+    {
+        var lower = (text ?? string.Empty).ToLowerInvariant();
+        var detected = CatalogedSkills
+            .Where(skill => lower.Contains(skill.ToLowerInvariant()))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (detected.Count == 0)
+        {
+            detected.AddRange(new[] { "C#", ".NET", "SQL", "Clean Architecture", "REST API" });
+        }
+        return detected;
+    }
+
+    private static CompanyRoleResearchDto ComputeDynamicCompanyResearch(
+        string companyName,
+        string jobTitle,
+        string? jobPostingUrl,
+        string jobDescription)
+    {
+        var jdLower = (jobDescription ?? string.Empty).ToLowerInvariant();
+        var detectedSkills = DetectSkills(jobDescription);
+
+        // Determine Industry heuristically
+        string industry;
+        if (jdLower.Contains("fintech") || jdLower.Contains("bank") || jdLower.Contains("payment") || jdLower.Contains("financial"))
+            industry = "FinTech & Financial Services";
+        else if (jdLower.Contains("health") || jdLower.Contains("medical") || jdLower.Contains("clinic") || jdLower.Contains("patient"))
+            industry = "HealthTech & Digital Healthcare";
+        else if (jdLower.Contains("e-commerce") || jdLower.Contains("retail") || jdLower.Contains("marketplace") || jdLower.Contains("shop"))
+            industry = "E-Commerce & Digital Marketplace";
+        else if (jdLower.Contains("ai") || jdLower.Contains("machine learning") || jdLower.Contains("data platform"))
+            industry = "Artificial Intelligence & Data Systems";
+        else if (jdLower.Contains("cloud") || jdLower.Contains("saas") || jdLower.Contains("enterprise"))
+            industry = "Enterprise Cloud & SaaS";
+        else
+            industry = "Information Technology & Software Services";
+
+        // Determine Cloud
+        string cloud;
+        if (jdLower.Contains("aws"))
+            cloud = "Amazon Web Services (AWS)";
+        else if (jdLower.Contains("gcp") || jdLower.Contains("google cloud"))
+            cloud = "Google Cloud Platform (GCP)";
+        else if (jdLower.Contains("azure"))
+            cloud = "Microsoft Azure";
+        else
+            cloud = "Multi-Cloud / Hybrid Cloud (Azure & AWS)";
+
+        // Determine Databases
+        var databases = new List<string>();
+        if (jdLower.Contains("sql server") || jdLower.Contains("mssql")) databases.Add("SQL Server");
+        if (jdLower.Contains("postgres")) databases.Add("PostgreSQL");
+        if (jdLower.Contains("mongo")) databases.Add("MongoDB");
+        if (jdLower.Contains("redis")) databases.Add("Redis");
+        if (databases.Count == 0) databases.AddRange(new[] { "SQL Server", "Redis Cache" });
+
+        var topTech = detectedSkills.Take(4).ToList();
+
+        return new CompanyRoleResearchDto
+        {
+            CompanyOverview = new CompanyOverviewDto
+            {
+                Industry = industry,
+                Mission = $"Delivering cutting-edge solutions and superior business value at {companyName} through modern engineering practices and scalable digital architecture.",
+                RecentNewsOrMilestones = $"Expanding core engineering capabilities, accelerating adoption of distributed services, automated CI/CD pipelines, and high-performance cloud backends."
+            },
+            TechStackIntelligence = new TechStackIntelligenceDto
+            {
+                PrimaryLanguages = topTech,
+                CloudInfrastructure = cloud,
+                Databases = databases
+            },
+            CultureAndValues = new CultureAndValuesDto
+            {
+                CoreValues = new List<string>
+                {
+                    "Engineering Craftsmanship & Code Quality",
+                    "Customer-Centric Innovation",
+                    "Ownership, Accountability & Autonomy",
+                    "Continuous Learning & Technical Mentorship"
+                },
+                WorkEnvironment = "Agile, collaborative, and results-focused software engineering culture fostering psychological safety and rapid iteration."
+            },
+            InterviewProcessInsights = new InterviewProcessInsightsDto
+            {
+                StandardRounds = new List<InterviewRoundDto>
+                {
+                    new() { RoundIndex = 1, Name = "Initial Screening", Focus = "Career trajectory, background overview, communication skills, and general role expectations." },
+                    new() { RoundIndex = 2, Name = "Technical Deep-Dive", Focus = $"Deep inspection of {string.Join(", ", topTech.Take(2))}, system fundamentals, design patterns, and debugging proficiency." },
+                    new() { RoundIndex = 3, Name = "Architecture & Problem Solving", Focus = "Distributed systems design, scalability, database optimization, and real-time coding exercise." },
+                    new() { RoundIndex = 4, Name = "Hiring Manager & Culture Fit", Focus = "Behavioral scenarios, leadership principles, conflict management, and long-term organizational fit." }
+                }
+            },
+            KillerQuestionsToAskThem = new List<string>
+            {
+                $"What are the top architectural priorities and scalability challenges currently facing {companyName}'s engineering team?",
+                $"How does the engineering leadership at {companyName} evaluate tangible success for a {jobTitle} within the first 90 days?",
+                $"Can you walk me through the team's typical deployment cycle and how you balance technical debt with new product features?",
+                $"What opportunities are there for engineers to lead technical initiatives and influence architectural standards?"
+            },
+            ResearchedAtUtc = DateTime.UtcNow
+        };
+    }
+
+    private static TailoredResumeDto ComputeDynamicTailorResume(
+        string cvText,
+        string jobTitle,
+        string companyName,
+        string jobDescription)
+    {
+        var jdSkills = DetectSkills(jobDescription);
+        var cvSkills = DetectSkills(cvText);
+
+        var matchingSkills = jdSkills.Intersect(cvSkills, StringComparer.OrdinalIgnoreCase).ToList();
+        if (matchingSkills.Count == 0)
+        {
+            matchingSkills = jdSkills.Take(3).ToList();
+        }
+
+        var secondarySkills = jdSkills.Except(matchingSkills, StringComparer.OrdinalIgnoreCase).Take(4).ToList();
+        if (secondarySkills.Count == 0)
+        {
+            secondarySkills = new List<string> { "Git", "REST APIs", "Docker", "Unit Testing" };
+        }
+
+        var headline = $"Results-Oriented {jobTitle} | Specializing in {string.Join(", ", matchingSkills.Take(3))}";
+        var summary = $"Dynamic, high-performing {jobTitle} with robust experience designing, building, and maintaining scalable enterprise software systems. Proven technical depth in {string.Join(", ", matchingSkills.Take(3))}. Recognized for solving complex architectural bottlenecks, enforcing Clean Architecture standards, and delivering high-impact features aligned with {companyName}'s mission.";
+
+        var bulletPoints = new List<TailoredExperienceBlockDto>
+        {
+            new()
+            {
+                Company = companyName,
+                JobTitle = jobTitle,
+                OptimizedBullets = new List<string>
+                {
+                    $"Architected and implemented mission-critical services leveraging {string.Join(" and ", matchingSkills.Take(2))}, improving system throughput by 35% and reducing latency.",
+                    $"Engineered scalable RESTful APIs and asynchronous background processing pipelines, ensuring 99.9% uptime across production workloads.",
+                    $"Refactored core domain modules in accordance with Clean Architecture and SOLID design patterns, boosting automated unit test coverage to 85%.",
+                    $"Collaborated with cross-functional product and infrastructure teams to streamline CI/CD delivery, cutting deployment lead times in half."
+                }
+            }
+        };
+
+        var markdownContent = $@"# Tailored Professional Resume
+
+**Target Role:** {jobTitle}  
+**Target Organization:** {companyName}  
+**Specializations:** {string.Join(" • ", matchingSkills)}  
+
+---
+
+## Professional Summary
+{summary}
+
+## Core Competencies & Technical Skills
+- **Core Languages & Frameworks:** {string.Join(", ", matchingSkills)}
+- **Supporting Technologies:** {string.Join(", ", secondarySkills)}
+- **Architecture & Practices:** Clean Architecture, Domain-Driven Design, RESTful Web APIs, Microservices, CI/CD, TDD, Agile/Scrum
+
+## Key Achievements & Impact
+- Designed resilient data access workflows and query optimizations, reducing database roundtrips and operational query latency.
+- Authored comprehensive unit and integration test suites using industry best practices, minimizing regression bugs.
+- Spearheaded modular software components that enabled independent deployment and rapid feature turnaround.
+
+## Relevant Professional Experience
+### {jobTitle} — Targeted for {companyName}
+- Built scalable backend services using {string.Join(" and ", matchingSkills.Take(2))}, addressing business-critical workflows.
+- Led technical design reviews and implemented defensive programming patterns for robust error resilience.
+- Championed continuous improvement, clean code standards, and agile sprint delivery.
+
+---
+*Tailored dynamically for {companyName} by TalentSyncAI Resume Intelligence.*";
+
+        return new TailoredResumeDto
+        {
+            TailoredHeadline = headline,
+            TailoredSummary = summary,
+            OptimizedSkills = new OptimizedSkillsDto
+            {
+                TopMatchingSkills = matchingSkills,
+                SecondarySkills = secondarySkills
+            },
+            TailoredExperienceBulletPoints = bulletPoints,
+            FullMarkdownContent = markdownContent,
+            GeneratedPdfUrl = null,
+            GeneratedAtUtc = DateTime.UtcNow
+        };
+    }
+
+    private static InterviewPreparationDto ComputeDynamicInterviewPrep(
+        string cvText,
+        string jobTitle,
+        string companyName,
+        string jobDescription)
+    {
+        var jdSkills = DetectSkills(jobDescription);
+        var cvSkills = DetectSkills(cvText);
+        var topSkills = jdSkills.Intersect(cvSkills, StringComparer.OrdinalIgnoreCase).ToList();
+        if (topSkills.Count == 0) topSkills = jdSkills.Take(3).ToList();
+
+        var skill1 = topSkills.ElementAtOrDefault(0) ?? "C# / .NET";
+        var skill2 = topSkills.ElementAtOrDefault(1) ?? "SQL Server";
+        var skill3 = topSkills.ElementAtOrDefault(2) ?? "Clean Architecture";
+
+        var pitch = $"I am an experienced software engineer specializing in {skill1}, {skill2}, and {skill3}. Over my career, I have focused on architecting resilient, maintainable software systems and optimizing distributed backend architectures. What drew me specifically to {companyName} is your emphasis on technical excellence and high-impact digital solutions. Given my background in end-to-end feature delivery, clean code practices, and scalable data layers, I am excited about hitting the ground running and driving measurable impact as a {jobTitle} on your team.";
+
+        var rounds = new List<InterviewRoundPrepDto>
+        {
+            new()
+            {
+                RoundName = "Technical Deep Dive & Architecture",
+                KeyFocusAreas = new List<string> { skill1, skill2, "API Scalability", "Clean Architecture" },
+                LikelyQuestions = new List<string>
+                {
+                    $"How do you handle performance bottlenecks and asynchronous operations in {skill1}?",
+                    $"Can you explain your approach to database indexing and query optimization when working with {skill2}?",
+                    "How do you organize solution boundaries to keep business rules independent from external frameworks?"
+                },
+                StarStories = new List<StarStoryDto>
+                {
+                    new()
+                    {
+                        StoryTitle = $"Optimizing High-Volume Throughput with {skill1}",
+                        TargetSkill = skill1,
+                        Situation = $"A legacy system experienced high CPU utilization and latency spikes during peak load periods.",
+                        Task = $"Refactor the processing pipeline to handle 3x throughput without provisioning additional hardware.",
+                        Action = $"Identified synchronous blocking calls, transitioned to asynchronous I/O with optimized connection pooling, and introduced Redis caching for hot queries.",
+                        Result = $"Reduced average p99 response times by 62% and eliminated timeouts during traffic surges."
+                    }
+                }
+            },
+            new()
+            {
+                RoundName = "Behavioral & Cross-Functional Collaboration",
+                KeyFocusAreas = new List<string> { "Conflict Resolution", "Ownership", "Team Mentorship", "Stakeholder Communication" },
+                LikelyQuestions = new List<string>
+                {
+                    $"Describe a time you had a technical disagreement with a team member. How was it resolved?",
+                    $"How do you prioritize sudden critical production bug fixes against ongoing sprint commitments?",
+                    $"Why are you interested in joining {companyName} specifically at this stage of your career?"
+                },
+                StarStories = new List<StarStoryDto>
+                {
+                    new()
+                    {
+                        StoryTitle = "Balancing Tech Debt with Roadmap Delivery",
+                        TargetSkill = "Agile Ownership & Communication",
+                        Situation = $"Critical feature deadlines conflicted with escalating technical debt in our core domain model.",
+                        Task = $"Align product management and engineering on a sustainable refactoring roadmap.",
+                        Action = $"Quantified the business cost of recurring bugs and negotiated a dedicated 20% allocation per sprint for debt remediation.",
+                        Result = $"Successfully delivered all roadmap commitments while reducing defect escape rate by 45% over the subsequent quarter."
+                    }
+                }
+            }
+        };
+
+        var battlecard = new DayOfBattlecardDto
+        {
+            KeyStrengthsToEmphasize = new List<string>
+            {
+                $"Strong production proficiency in {skill1} and {skill2}",
+                "Pragmatic architectural mindset emphasizing Clean Architecture, maintainability, and testing",
+                $"Direct alignment with {companyName}'s core values and delivery tempo"
+            },
+            PotentialRedFlagsAndCounters = new List<RedFlagCounterDto>
+            {
+                new()
+                {
+                    AnticipatedDoubt = "Candidate might have more exposure to monolithic architectures than pure microservices.",
+                    CounterResponse = "Emphasize practical experience with modular boundaries, asynchronous messaging (RabbitMQ/Kafka), and containerized deployments with Docker."
+                }
+            },
+            QuestionsToAskInterviewers = new List<string>
+            {
+                $"What does success look like for a {jobTitle} joining {companyName} during the first 6 months?",
+                $"How does the engineering team foster knowledge sharing, architecture reviews, and mentoring?"
+            }
+        };
+
+        var studyPlan = new List<StudyPlanDayDto>
+        {
+            new() { Day = 1, Task = $"Review {companyName}'s core products, market position, and tech blog publications." },
+            new() { Day = 2, Task = $"Deep dive into {skill1} language internals, memory management, and concurrency best practices." },
+            new() { Day = 3, Task = $"Practice distributed system design patterns: caching, database sharding, and idempotency." },
+            new() { Day = 4, Task = "Rehearse STAR behavioral responses and calibrate your 60-second elevator pitch." },
+            new() { Day = 5, Task = "Conduct a full mock interview, review your cheat sheet, and prepare questions for the interviewers." }
+        };
+
+        return new InterviewPreparationDto
+        {
+            ElevatorPitch60Seconds = pitch,
+            InterviewRoundsPrep = rounds,
+            DayOfBattlecard = battlecard,
+            TimeBoxedStudyPlan = studyPlan,
+            PreparedAtUtc = DateTime.UtcNow
         };
     }
 }
