@@ -36,7 +36,6 @@ TalentSync-AI/
 │   ├── pyproject.toml             # Python dependencies
 │   └── Dockerfile                 # Python 3.13 container build
 ├── docker-compose.yml             # Full stack orchestration (DB + AI + Backend)
-├── .env.example                   # Environment configuration template
 ├── TalentSyncAI.sln               # Solution file
 └── README.md                      # Documentation
 ```
@@ -68,18 +67,11 @@ You can run the entire platform (Database + AI Service + Backend) with a **singl
 
 ### 2. Clone the Repository
 ```bash
-git clone -b backend-dev https://github.com/abdoamr99/TalentSync-AI.git
+git clone https://github.com/abdoamr99/TalentSync-AI.git
 cd TalentSync-AI
 ```
 
-### 3. (Optional) Configure Environment
-If you want to use live LLMs (OpenAI, Tavily), copy `.env.example` to `.env` and fill in your keys:
-```bash
-cp .env.example .env
-```
-*(If no keys are provided, the platform automatically runs in its built-in **Fail-Safe Mock Engine** mode).*
-
-### 4. Run Everything
+### 3. Run Everything
 ```bash
 docker compose up --build
 ```
