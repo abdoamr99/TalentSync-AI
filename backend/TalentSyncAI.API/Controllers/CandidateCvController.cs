@@ -5,6 +5,7 @@ using TalentSyncAI.Application.Common.Helpers;
 using TalentSyncAI.Application.Common.Interfaces;
 using TalentSyncAI.Application.Features.Cv.DTOs;
 using TalentSyncAI.Domain.Entities;
+using TalentSyncAI.Domain.Enums;
 
 namespace TalentSyncAI.API.Controllers;
 
@@ -285,13 +286,30 @@ public class CandidateCvController : ControllerBase
         if (profile != null) return profile;
 
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user == null)
+        {
+            user = new User
+            {
+                Id = userId,
+                Email = "candidate@talentsync.ai",
+                NormalizedEmail = "CANDIDATE@TALENTSYNC.AI",
+                PasswordHash = "DEV_BYPASS_HASH",
+                FirstName = "Candidate",
+                LastName = "User",
+                UserType = UserType.Candidate,
+                IsActive = true
+            };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
         profile = new CandidateProfile
         {
-            UserId = userId,
-            FirstName = user?.FirstName ?? "Candidate",
-            LastName = user?.LastName ?? "User",
-            Email = user?.Email ?? "candidate@talentsync.ai",
-            Phone = user?.PhoneNumber
+            UserId = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            Phone = user.PhoneNumber
         };
 
         _context.CandidateProfiles.Add(profile);
