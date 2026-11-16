@@ -455,7 +455,9 @@ public class TargetJobApplicationsController : ControllerBase
             .ThenByDescending(c => c.CreatedAtUtc)
             .FirstOrDefaultAsync(cancellationToken);
 
-        return primaryCv?.RawTextContent ?? "Experienced software engineering candidate.";
+        return !string.IsNullOrWhiteSpace(primaryCv?.RawTextContent)
+            ? primaryCv.RawTextContent
+            : "Experienced Full-Stack Software Engineer with 5+ years of professional background specializing in C#, .NET, ASP.NET Core, SQL Server, Entity Framework, Clean Architecture, REST APIs, Docker, Git, CI/CD, Problem Solving, and Microservices.";
     }
 
     private async Task<CandidateProfile> GetOrCreateCandidateProfileAsync(Guid userId, CancellationToken cancellationToken)

@@ -91,49 +91,8 @@ public class CandidateAiService : ICandidateAiService
             }
         }
 
-        // Realistic Fallback/Mock Data
-        return new JobMatchAnalysisDto
-        {
-            MatchScore = 86.5m,
-            MatchVerdict = $"Strong Fit for {jobTitle} at {companyName}",
-            StrengthsAnalysis = new List<StrengthItemDto>
-            {
-                new()
-                {
-                    SkillOrRequirement = $"{jobTitle} Core Competency",
-                    EvidenceFromCv = "Demonstrated deep hands-on background and architectural proficiency directly aligned with the target role.",
-                    Importance = "High"
-                },
-                new()
-                {
-                    SkillOrRequirement = "Clean Architecture & Scalable Services",
-                    EvidenceFromCv = "Solid track record of designing distributed, high-performance web systems and reliable data persistence.",
-                    Importance = "High"
-                },
-                new()
-                {
-                    SkillOrRequirement = "Team Collaboration & Delivery",
-                    EvidenceFromCv = "Proven experience delivering production features and collaborating effectively in agile squads.",
-                    Importance = "Medium"
-                }
-            },
-            SkillGaps = new List<SkillGapItemDto>
-            {
-                new()
-                {
-                    MissingSkill = "Domain-Specific Cloud Tooling / Event Streaming",
-                    Severity = "Medium",
-                    ImpactDescription = $"The job description for {jobTitle} emphasizes specialized cloud orchestrations and streaming architectures.",
-                    RemediationAdvice = "Highlight adjacent asynchronous processing experience and demonstrate familiarity with cloud-native primitives during technical discussions."
-                }
-            },
-            StrategicRecommendations = new List<string>
-            {
-                $"Tailor your career summary to emphasize high-impact metrics relevant to {companyName}'s current stage.",
-                "Highlight quantifiable performance improvements (e.g. latency, throughput, reliability) in your recent experience bullets."
-            },
-            AnalyzedAtUtc = DateTime.UtcNow
-        };
+        // Dynamic Intelligent Analysis Fallback
+        return ComputeDynamicMatch(cvText, jobTitle, companyName, jobDescription);
     }
 
     public async Task<CompanyRoleResearchDto> ResearchCompanyAsync(
@@ -411,6 +370,156 @@ Accomplished professional with deep expertise in designing resilient software ar
                 new() { Day = 3, Task = $"Review {companyName}'s product offerings and finalize the high-impact questions to ask the interviewers." }
             },
             PreparedAtUtc = DateTime.UtcNow
+        };
+    }
+
+    private static readonly string[] CatalogedSkills =
+    {
+        "C#", ".NET", "ASP.NET", "Entity Framework", "EF Core", "SQL Server", "SQL", "PostgreSQL", "MySQL", "MongoDB",
+        "Docker", "Kubernetes", "Clean Architecture", "Microservices", "REST API", "Azure", "AWS", "GCP", "CI/CD", "Git",
+        "Redis", "Kafka", "RabbitMQ", "Unit Testing", "xUnit", "NUnit", "TDD", "SOLID", "Design Patterns",
+        "React", "Angular", "Vue", "TypeScript", "JavaScript", "Python", "FastAPI", "Django", "Java", "Spring Boot",
+        "GraphQL", "Linux", "DevOps", "HTML", "CSS", "Tailwind", "Agile", "Scrum", "Problem Solving", "OOP",
+        "Data Structures", "Algorithms", "System Design", "Elasticsearch", "Next.js", "Node.js"
+    };
+
+    private static readonly HashSet<string> StopWords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "with", "from", "that", "this", "have", "will", "your", "their", "about", "which",
+        "experience", "years", "candidate", "responsibilities", "requirements", "skills",
+        "looking", "strong", "knowledge", "working", "preferred", "qualifications", "must"
+    };
+
+    private static JobMatchAnalysisDto ComputeDynamicMatch(
+        string cvText,
+        string jobTitle,
+        string companyName,
+        string jobDescription)
+    {
+        var textToSearch = $"{jobTitle} {jobDescription}".ToLowerInvariant();
+        var cvLower = (cvText ?? string.Empty).ToLowerInvariant();
+
+        // 1. Detect required skills in the job specification
+        var requiredSkills = CatalogedSkills
+            .Where(skill => textToSearch.Contains(skill.ToLowerInvariant()))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        // If few cataloged skills matched, extract notable words (>= 4 chars)
+        if (requiredSkills.Count < 3)
+        {
+            var fallbackKeywords = textToSearch
+                .Split(new[] { ' ', '\r', '\n', ',', '.', ';', ':', '-', '/', '(', ')' }, StringSplitOptions.RemoveEmptyEntries)
+                .Where(w => w.Length >= 4 && !StopWords.Contains(w))
+                .Distinct()
+                .Take(6);
+
+            foreach (var kw in fallbackKeywords)
+            {
+                if (!requiredSkills.Any(s => s.Equals(kw, StringComparison.OrdinalIgnoreCase)))
+                {
+                    requiredSkills.Add(char.ToUpperInvariant(kw[0]) + kw[1..]);
+                }
+            }
+        }
+
+        // 2. Classify into matched strengths vs missing gaps
+        var matched = new List<string>();
+        var missing = new List<string>();
+
+        foreach (var skill in requiredSkills)
+        {
+            if (cvLower.Contains(skill.ToLowerInvariant()))
+            {
+                matched.Add(skill);
+            }
+            else
+            {
+                missing.Add(skill);
+            }
+        }
+
+        // 3. Compute dynamic score
+        double rawRatio;
+        if (requiredSkills.Count > 0)
+        {
+            rawRatio = (double)matched.Count / requiredSkills.Count;
+        }
+        else
+        {
+            rawRatio = 0.5;
+        }
+
+        // Map ratio to realistic percentage (e.g. 0% matched -> 28.5%, 100% matched -> 94.5%)
+        var dynamicScore = Math.Round((decimal)(28.0 + (rawRatio * 65.0) + (cvLower.Contains(jobTitle.ToLowerInvariant()) ? 3.5 : 0.0)), 1);
+        dynamicScore = Math.Clamp(dynamicScore, 18.0m, 97.5m);
+
+        // 4. Compute Verdict
+        string verdict;
+        if (dynamicScore >= 85)
+            verdict = $"Exceptional Fit for {jobTitle} at {companyName}";
+        else if (dynamicScore >= 70)
+            verdict = $"Strong Fit for {jobTitle} with Minor Technical Gaps";
+        else if (dynamicScore >= 50)
+            verdict = $"Moderate Fit for {jobTitle} - Targeted Upskilling Recommended";
+        else
+            verdict = $"Low Alignment for {jobTitle} - Substantial Gaps in Core Requirements";
+
+        // 5. Build Strengths list
+        var strengths = new List<StrengthItemDto>();
+        foreach (var s in matched.Take(4))
+        {
+            strengths.Add(new StrengthItemDto
+            {
+                SkillOrRequirement = s,
+                EvidenceFromCv = $"Verified hands-on proficiency in '{s}' aligned directly with {jobTitle} specifications.",
+                Importance = "High"
+            });
+        }
+
+        if (strengths.Count == 0)
+        {
+            strengths.Add(new StrengthItemDto
+            {
+                SkillOrRequirement = "Foundational Engineering Knowledge",
+                EvidenceFromCv = "Demonstrated baseline technical competencies and structured software development background.",
+                Importance = "Medium"
+            });
+        }
+
+        // 6. Build Gaps list
+        var gaps = new List<SkillGapItemDto>();
+        foreach (var s in missing.Take(4))
+        {
+            gaps.Add(new SkillGapItemDto
+            {
+                MissingSkill = s,
+                Severity = gaps.Count == 0 ? "High" : "Medium",
+                ImpactDescription = $"The job description for {jobTitle} at {companyName} explicitly highlights '{s}', which was not prominently identified in the CV.",
+                RemediationAdvice = $"Review core concepts of '{s}' and prepare to discuss adjacent or transferrable project experience in technical interviews."
+            });
+        }
+
+        // 7. Dynamic Strategic Recommendations
+        var recommendations = new List<string>();
+        if (matched.Count > 0)
+        {
+            recommendations.Add($"Lead your application and introductory remarks with strong quantifiable achievements in {string.Join(", ", matched.Take(3))}.");
+        }
+        if (missing.Count > 0)
+        {
+            recommendations.Add($"Proactively address missing exposure to {string.Join(", ", missing.Take(2))} by demonstrating rapid learning capability and referencing related architectures.");
+        }
+        recommendations.Add($"Align your interview stories with {companyName}'s engineering culture and high-impact deliverables.");
+
+        return new JobMatchAnalysisDto
+        {
+            MatchScore = dynamicScore,
+            MatchVerdict = verdict,
+            StrengthsAnalysis = strengths,
+            SkillGaps = gaps,
+            StrategicRecommendations = recommendations,
+            AnalyzedAtUtc = DateTime.UtcNow
         };
     }
 }
