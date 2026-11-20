@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using TalentSyncAI.Application.Common.Interfaces;
 using TalentSyncAI.Application.Features.TargetJobs.DTOs;
 
@@ -105,6 +106,7 @@ public class TargetJobApplicationsController : ControllerBase
     /// Stage 1 AI: Runs Job Match & Skill Gap Analysis for this target application.
     /// </summary>
     [HttpPost("{id:guid}/match")]
+    [EnableRateLimiting("ai")]
     public async Task<ActionResult<JobMatchAnalysisDto>> AnalyzeJobMatch(Guid id, CancellationToken cancellationToken = default)
     {
         var userId = _currentUserService.UserId;
@@ -118,6 +120,7 @@ public class TargetJobApplicationsController : ControllerBase
     /// Stage 2 AI: Runs Company & Role Recon for this target application.
     /// </summary>
     [HttpPost("{id:guid}/research")]
+    [EnableRateLimiting("ai")]
     public async Task<ActionResult<CompanyRoleResearchDto>> ResearchCompany(Guid id, CancellationToken cancellationToken = default)
     {
         var userId = _currentUserService.UserId;
@@ -131,6 +134,7 @@ public class TargetJobApplicationsController : ControllerBase
     /// Stage 3 AI: Generates Tailored Resume for this target application.
     /// </summary>
     [HttpPost("{id:guid}/tailor-resume")]
+    [EnableRateLimiting("ai")]
     public async Task<ActionResult<TailoredResumeDto>> TailorResume(Guid id, CancellationToken cancellationToken = default)
     {
         var userId = _currentUserService.UserId;
@@ -159,6 +163,7 @@ public class TargetJobApplicationsController : ControllerBase
     /// Stage 4 AI: Generates comprehensive Interview Preparation and Battlecard.
     /// </summary>
     [HttpPost("{id:guid}/interview-prep")]
+    [EnableRateLimiting("ai")]
     public async Task<ActionResult<InterviewPreparationDto>> PrepareInterview(Guid id, CancellationToken cancellationToken = default)
     {
         var userId = _currentUserService.UserId;
@@ -172,6 +177,7 @@ public class TargetJobApplicationsController : ControllerBase
     /// Executes all candidate AI stages (Match, Recon, Tailor, Prep) sequentially in one request.
     /// </summary>
     [HttpPost("{id:guid}/generate-all")]
+    [EnableRateLimiting("ai")]
     public async Task<ActionResult<TargetJobApplicationDetailDto>> GenerateAllArtifacts(Guid id, CancellationToken cancellationToken = default)
     {
         var userId = _currentUserService.UserId;

@@ -102,7 +102,14 @@ public class FileStorageService : IFileStorageService
     public string GetFullPath(string storedFilePath)
     {
         var normalizedRelative = storedFilePath.Replace("..", "").TrimStart('/', '\\').Replace('/', Path.DirectorySeparatorChar);
-        return Path.Combine(_baseStoragePath, normalizedRelative);
+        var combinedPath = Path.GetFullPath(Path.Combine(_baseStoragePath, normalizedRelative));
+
+        if (!combinedPath.StartsWith(Path.GetFullPath(_baseStoragePath), StringComparison.OrdinalIgnoreCase))
+        {
+            throw new UnauthorizedAccessException("Access to paths outside the configured storage directory is forbidden.");
+        }
+
+        return combinedPath;
     }
 
     private static string SanitizeFileName(string fileName)
