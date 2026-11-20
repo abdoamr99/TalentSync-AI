@@ -35,6 +35,7 @@ public class CandidateAiService : ICandidateAiService
         string jobTitle,
         string companyName,
         string jobDescription,
+        string? jobPostingUrl = null,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Analyzing Job Match for {JobTitle} at {Company}", jobTitle, companyName);
@@ -44,7 +45,9 @@ public class CandidateAiService : ICandidateAiService
             cv_text = cvText,
             target_role = jobTitle,
             target_company = companyName,
-            raw_job_description = jobDescription
+            raw_job_description = jobDescription,
+            job_url = jobPostingUrl,
+            job_posting_url = jobPostingUrl
         };
 
         var result = await PostAsync<object, JobMatchAnalysisDto>("/v1/candidate/match", payload, cancellationToken);
@@ -79,6 +82,7 @@ public class CandidateAiService : ICandidateAiService
         string jobTitle,
         string companyName,
         string jobDescription,
+        string? jobPostingUrl = null,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Generating tailored resume for {JobTitle} at {Company}", jobTitle, companyName);
@@ -88,7 +92,9 @@ public class CandidateAiService : ICandidateAiService
             cv_text = cvText,
             target_role = jobTitle,
             target_company = companyName,
-            raw_job_description = jobDescription
+            raw_job_description = jobDescription,
+            job_url = jobPostingUrl,
+            job_posting_url = jobPostingUrl
         };
 
         var result = await PostAsync<object, TailoredResumeDto>("/v1/candidate/tailor", payload, cancellationToken);
@@ -101,6 +107,7 @@ public class CandidateAiService : ICandidateAiService
         string jobTitle,
         string companyName,
         string jobDescription,
+        string? jobPostingUrl = null,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Generating interview prep for {JobTitle} at {Company}", jobTitle, companyName);
@@ -110,7 +117,9 @@ public class CandidateAiService : ICandidateAiService
             cv_text = cvText,
             target_role = jobTitle,
             target_company = companyName,
-            raw_job_description = jobDescription
+            raw_job_description = jobDescription,
+            job_url = jobPostingUrl,
+            job_posting_url = jobPostingUrl
         };
 
         var result = await PostAsync<object, InterviewPreparationDto>("/v1/candidate/prep", payload, cancellationToken);

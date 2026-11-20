@@ -82,23 +82,34 @@ public class TargetJobApplicationsController : ControllerBase
                 {
                     var (isValid, errorMessage) = FileValidationHelper.ValidateFile(stream, request.File.FileName, request.File.Length);
                     if (!isValid) return BadRequest(errorMessage);
-                }
 
-                rawJd = $"[Uploaded JD File: {request.File.FileName}] - Position requirements for {request.TargetRole} at {request.TargetCompany}";
+                    var extracted = await FileValidationHelper.TryExtractTextAsync(stream, request.File.FileName);
+                    if (string.IsNullOrWhiteSpace(extracted))
+                    {
+                        return BadRequest("Unable to extract readable text content from the uploaded job description file. Please upload a valid text-based PDF or TXT file, or paste the text directly.");
+                    }
+                    rawJd = extracted;
+                }
                 break;
 
             case JdInputType.Url:
-                if (string.IsNullOrWhiteSpace(jobUrl) || !Uri.TryCreate(jobUrl, UriKind.Absolute, out _))
-                    return BadRequest("A valid Job Posting URL is required when input type is URL.");
+                if (string.IsNullOrWhiteSpace(jobUrl) || 
+                    !Uri.TryCreate(jobUrl, UriKind.Absolute, out var uriResult) || 
+                    (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps))
+                {
+                    return BadRequest("A valid HTTP or HTTPS Job Posting URL is required when input type is URL.");
+                }
 
                 if (string.IsNullOrWhiteSpace(rawJd) || rawJd == "string")
-                    rawJd = $"Job posting parsed from {jobUrl} for {request.TargetRole} at {request.TargetCompany}.";
+                {
+                    rawJd = string.Empty;
+                }
                 break;
 
             case JdInputType.Text:
             default:
-                if (string.IsNullOrWhiteSpace(rawJd) || rawJd == "string")
-                    return BadRequest("Job description text is required when input type is Text.");
+                if (string.IsNullOrWhiteSpace(rawJd) || rawJd.Trim() == "string")
+                    return BadRequest("Job description text is required and cannot be empty or default placeholder.");
                 break;
         }
 
@@ -242,7 +253,7 @@ public class TargetJobApplicationsController : ControllerBase
         var cvText = await GetCvTextAsync(application.SourceCvId, application.CandidateProfileId, cancellationToken);
 
         var analysisDto = await _aiService.AnalyzeJobMatchAsync(
-            cvText, application.TargetRole, application.TargetCompany, application.RawJobDescription, cancellationToken);
+            cvText, application.TargetRole, application.TargetCompany, application.RawJobDescription, application.JobPostingUrl, cancellationToken);
 
         var existingAnalysis = await _context.JobMatchAnalyses
             .FirstOrDefaultAsync(m => m.TargetJobApplicationId == application.Id, cancellationToken);
@@ -322,7 +333,7 @@ public class TargetJobApplicationsController : ControllerBase
         var cvText = await GetCvTextAsync(application.SourceCvId, application.CandidateProfileId, cancellationToken);
 
         var tailoredDto = await _aiService.TailorResumeAsync(
-            cvText, application.TargetRole, application.TargetCompany, application.RawJobDescription, cancellationToken);
+            cvText, application.TargetRole, application.TargetCompany, application.RawJobDescription, application.JobPostingUrl, cancellationToken);
 
         var existingTailored = await _context.TailoredResumes
             .FirstOrDefaultAsync(t => t.TargetJobApplicationId == application.Id, cancellationToken);
@@ -403,7 +414,7 @@ public class TargetJobApplicationsController : ControllerBase
         var cvText = await GetCvTextAsync(application.SourceCvId, application.CandidateProfileId, cancellationToken);
 
         var prepDto = await _aiService.PrepareInterviewAsync(
-            cvText, application.TargetRole, application.TargetCompany, application.RawJobDescription, cancellationToken);
+            cvText, application.TargetRole, application.TargetCompany, application.RawJobDescription, application.JobPostingUrl, cancellationToken);
 
         var existingPrep = await _context.InterviewPreparations
             .FirstOrDefaultAsync(p => p.TargetJobApplicationId == application.Id, cancellationToken);

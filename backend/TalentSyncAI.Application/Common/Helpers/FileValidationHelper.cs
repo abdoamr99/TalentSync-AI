@@ -122,4 +122,67 @@ public static class FileValidationHelper
 
         return Convert.ToHexString(hashBytes).ToLowerInvariant();
     }
+
+    /// <summary>
+    /// Attempts text extraction from plain text and PDF streams.
+    /// </summary>
+    public static async Task<string?> TryExtractTextAsync(Stream stream, string fileName)
+    {
+        try
+        {
+            var ext = Path.GetExtension(fileName).ToLowerInvariant();
+            if (stream.CanSeek) stream.Position = 0;
+
+            if (ext == ".txt")
+            {
+                using var reader = new StreamReader(stream, System.Text.Encoding.UTF8, leaveOpen: true);
+                var content = await reader.ReadToEndAsync();
+                if (stream.CanSeek) stream.Position = 0;
+                return content?.Trim();
+            }
+
+            if (ext == ".pdf")
+            {
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                if (stream.CanSeek) stream.Position = 0;
+                var rawBytes = ms.ToArray();
+                var text = ExtractSimplePdfText(rawBytes);
+                if (!string.IsNullOrWhiteSpace(text) && text.Length > 20)
+                {
+                    return text.Trim();
+                }
+            }
+        }
+        catch
+        {
+            // Silently fall back if format cannot be parsed
+        }
+        return null;
+    }
+
+    private static string ExtractSimplePdfText(byte[] rawBytes)
+    {
+        var text = System.Text.Encoding.Latin1.GetString(rawBytes);
+        var sb = new System.Text.StringBuilder();
+
+        var matches = System.Text.RegularExpressions.Regex.Matches(text, @"\(([^()]+)\)\s*T[jJ]");
+        foreach (System.Text.RegularExpressions.Match m in matches)
+        {
+            if (m.Groups.Count > 1)
+            {
+                sb.Append(m.Groups[1].Value).Append(' ');
+            }
+        }
+
+        var result = sb.ToString().Trim();
+        if (result.Length > 20) return result;
+
+        var words = System.Text.RegularExpressions.Regex.Matches(text, @"[A-Za-z0-9#\+\.]{3,}")
+            .Select(m => m.Value)
+            .Where(w => !w.StartsWith("obj") && !w.StartsWith("endobj") && !w.StartsWith("xref") && !w.StartsWith("stream"))
+            .Distinct();
+
+        return string.Join(" ", words.Take(200));
+    }
 }

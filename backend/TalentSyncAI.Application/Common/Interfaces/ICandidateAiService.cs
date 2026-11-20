@@ -9,6 +9,7 @@ public interface ICandidateAiService
         string jobTitle, 
         string companyName, 
         string jobDescription, 
+        string? jobPostingUrl = null,
         CancellationToken cancellationToken = default);
 
     Task<CompanyRoleResearchDto> ResearchCompanyAsync(
@@ -23,6 +24,7 @@ public interface ICandidateAiService
         string jobTitle, 
         string companyName, 
         string jobDescription, 
+        string? jobPostingUrl = null,
         CancellationToken cancellationToken = default);
 
     Task<InterviewPreparationDto> PrepareInterviewAsync(
@@ -30,6 +32,7 @@ public interface ICandidateAiService
         string jobTitle, 
         string companyName, 
         string jobDescription, 
+        string? jobPostingUrl = null,
         CancellationToken cancellationToken = default);
 }
 
