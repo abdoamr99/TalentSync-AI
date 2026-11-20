@@ -37,8 +37,27 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IAuthService, AuthService>();
 
-        // AI & Search & Storage Services
-        services.AddScoped<ICandidateAiService, CandidateAiService>();
+        // AI Service (Typed HttpClient with Resilience)
+        var aiBaseUrl = configuration["AiService:BaseUrl"] ?? "http://localhost:8000";
+        var internalApiKey = configuration["AiService:InternalApiKey"] ?? "dev-internal-api-key";
+        var timeoutSeconds = configuration.GetValue<int>("AiService:TimeoutSeconds", 120);
+
+        services.AddHttpClient<ICandidateAiService, CandidateAiService>(client =>
+        {
+            client.BaseAddress = new Uri(aiBaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+            if (!string.IsNullOrWhiteSpace(internalApiKey))
+            {
+                client.DefaultRequestHeaders.Add("X-Internal-Api-Key", internalApiKey);
+            }
+        })
+        .AddStandardResilienceHandler(options =>
+        {
+            options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+            options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(timeoutSeconds * 2);
+            options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(timeoutSeconds * 2);
+        });
+
         services.AddScoped<IPdfGeneratorService, PdfGeneratorService>();
         services.AddSingleton<IFileStorageService, FileStorageService>();
 

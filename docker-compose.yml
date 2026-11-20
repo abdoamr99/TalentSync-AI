@@ -77,7 +77,6 @@ services:
       - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=TalentSyncAIDb;User Id=sa;Password=YourStrong@Passw0rd!;TrustServerCertificate=True;MultipleActiveResultSets=true;
       - AiService__BaseUrl=http://ai-service:8000
       - AiService__InternalApiKey=${INTERNAL_API_KEY:-dev-internal-api-key}
-      - AiService__EnableLiveAi=true
       - Storage__UploadDirectory=/app/Storage/Uploads
     depends_on:
       sqlserver:

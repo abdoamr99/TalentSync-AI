@@ -469,9 +469,12 @@ public class TargetJobApplicationsController : ControllerBase
             .ThenByDescending(c => c.CreatedAtUtc)
             .FirstOrDefaultAsync(cancellationToken);
 
-        return !string.IsNullOrWhiteSpace(primaryCv?.RawTextContent)
-            ? primaryCv.RawTextContent
-            : "Experienced Full-Stack Software Engineer with 5+ years of professional background specializing in C#, .NET, ASP.NET Core, SQL Server, Entity Framework, Clean Architecture, REST APIs, Docker, Git, CI/CD, Problem Solving, and Microservices.";
+        if (!string.IsNullOrWhiteSpace(primaryCv?.RawTextContent))
+        {
+            return primaryCv.RawTextContent;
+        }
+
+        throw new InvalidOperationException("Upload a CV with readable text content first before running AI insights.");
     }
 
     private async Task<CandidateProfile> GetOrCreateCandidateProfileAsync(Guid userId, CancellationToken cancellationToken)
