@@ -61,13 +61,6 @@ public static class DependencyInjection
         services.AddScoped<IPdfGeneratorService, PdfGeneratorService>();
         services.AddSingleton<IFileStorageService, FileStorageService>();
 
-        // Application Services
-        services.AddScoped<ICandidateCvService, CandidateCvService>();
-        services.AddScoped<ITargetJobApplicationService, TargetJobApplicationService>();
-        services.AddScoped<ICompanyCvService, CompanyCvService>();
-        services.AddScoped<ICandidateSearchService, CandidateSearchService>();
-        services.AddScoped<ICompanyShortlistService, CompanyShortlistService>();
-
         // Health Checks
         services.AddHealthChecks()
             .AddDbContextCheck<ApplicationDbContext>(name: "database_sqlserver");

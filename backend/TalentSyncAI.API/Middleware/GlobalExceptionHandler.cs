@@ -54,18 +54,6 @@ public class GlobalExceptionHandler : IExceptionHandler
                 problemDetails.Detail = exception.Message;
                 break;
 
-            case ForbiddenException:
-                problemDetails.Title = "Forbidden";
-                problemDetails.Status = StatusCodes.Status403Forbidden;
-                problemDetails.Detail = exception.Message;
-                break;
-
-            case ConflictException:
-                problemDetails.Title = "Conflict";
-                problemDetails.Status = StatusCodes.Status409Conflict;
-                problemDetails.Detail = exception.Message;
-                break;
-
             case KeyNotFoundException:
                 problemDetails.Title = "Not Found";
                 problemDetails.Status = StatusCodes.Status404NotFound;

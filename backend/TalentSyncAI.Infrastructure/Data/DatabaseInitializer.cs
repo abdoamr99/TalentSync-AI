@@ -29,7 +29,7 @@ public static class DatabaseInitializer
 
         var context = services.GetRequiredService<ApplicationDbContext>();
 
-        if (migrateOnStartup && context.Database.IsRelational())
+        if (migrateOnStartup)
         {
             try
             {
@@ -122,3 +122,4 @@ public static class DatabaseInitializer
         logger.LogInformation("Development database seeding completed.");
     }
 }
+

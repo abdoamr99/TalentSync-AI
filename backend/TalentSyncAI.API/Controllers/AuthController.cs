@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using TalentSyncAI.Application.Common.Interfaces;
 using TalentSyncAI.Application.Features.Auth.DTOs;
 
@@ -8,7 +7,6 @@ namespace TalentSyncAI.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[EnableRateLimiting("auth")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
