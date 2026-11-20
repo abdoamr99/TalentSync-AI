@@ -29,7 +29,7 @@ public static class DatabaseInitializer
 
         var context = services.GetRequiredService<ApplicationDbContext>();
 
-        if (migrateOnStartup)
+        if (migrateOnStartup && context.Database.IsRelational())
         {
             try
             {
