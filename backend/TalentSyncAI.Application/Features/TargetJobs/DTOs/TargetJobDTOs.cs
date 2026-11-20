@@ -23,6 +23,17 @@ public class CreateTargetJobApplicationRequest
     public Guid? SourceCvId { get; set; }
 }
 
+public record CreateTargetJobApplicationModel(
+    string TargetCompany,
+    string TargetRole,
+    JdInputType JdInputType,
+    string? JobPostingUrl,
+    string? RawJobDescription,
+    Guid? SourceCvId,
+    Stream? FileStream = null,
+    string? FileName = null,
+    long? FileLength = null);
+
 public class TargetJobApplicationListDto
 {
     public Guid Id { get; set; }

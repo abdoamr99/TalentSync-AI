@@ -1,11 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TalentSyncAI.Application.Common.Helpers;
 using TalentSyncAI.Application.Common.Interfaces;
 using TalentSyncAI.Application.Common.Models;
 using TalentSyncAI.Application.Features.Cv.DTOs;
-using TalentSyncAI.Domain.Entities;
 using TalentSyncAI.Domain.Enums;
 
 namespace TalentSyncAI.API.Controllers;
@@ -15,21 +12,18 @@ namespace TalentSyncAI.API.Controllers;
 [Authorize(Roles = "Recruiter")]
 public class CompanyCvController : ControllerBase
 {
-    private readonly IApplicationDbContext _context;
+    private readonly ICompanyCvService _companyCvService;
     private readonly ITenantContext _tenantContext;
     private readonly ICurrentUserService _currentUserService;
-    private readonly IFileStorageService _fileStorageService;
 
     public CompanyCvController(
-        IApplicationDbContext context,
+        ICompanyCvService companyCvService,
         ITenantContext tenantContext,
-        ICurrentUserService currentUserService,
-        IFileStorageService fileStorageService)
+        ICurrentUserService currentUserService)
     {
-        _context = context;
+        _companyCvService = companyCvService;
         _tenantContext = tenantContext;
         _currentUserService = currentUserService;
-        _fileStorageService = fileStorageService;
     }
 
     /// <summary>
@@ -42,119 +36,32 @@ public class CompanyCvController : ControllerBase
         [FromForm] UploadCompanyCvsRequest request,
         CancellationToken cancellationToken = default)
     {
-        var files = request?.Files;
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
-        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue)
-        {
-            return Forbid();
-        }
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue) return Forbid();
+        var companyId = _tenantContext.CompanyId.Value;
 
-        var companyId = _tenantContext.CompanyId!.Value;
-
-        // Verify that the user has an active membership in this company
-        var hasMembership = await _context.CompanyMembers
-            .AnyAsync(m => m.CompanyId == companyId && m.UserId == userId.Value && m.IsActive, cancellationToken);
-
-        if (!hasMembership)
-        {
-            return Forbid("User is not an authorized active member of this company.");
-        }
-
+        var files = request?.Files;
         if (files == null || files.Count == 0)
         {
             return BadRequest("Please provide at least one CV file to upload.");
         }
 
-        if (files.Count > FileValidationHelper.MaxBulkUploadFiles)
+        var items = files.Select(f => new CompanyCvUploadItem(f.OpenReadStream(), f.FileName, f.ContentType, f.Length)).ToList();
+
+        try
         {
-            return BadRequest($"A maximum of {FileValidationHelper.MaxBulkUploadFiles} files can be uploaded per batch. Received {files.Count} files.");
+            var response = await _companyCvService.UploadCompanyCvsAsync(companyId, userId.Value, items, cancellationToken);
+            return Ok(response);
         }
-
-        var response = new CompanyBulkUploadResponseDto
+        finally
         {
-            TotalReceived = files.Count
-        };
-
-        foreach (var file in files)
-        {
-            using var stream = file.OpenReadStream();
-            var (isValid, errorMessage) = FileValidationHelper.ValidateFile(stream, file.FileName, file.Length);
-            if (!isValid)
+            foreach (var item in items)
             {
-                response.SkippedFileNames.Add($"{file.FileName} ({errorMessage})");
-                continue;
+                item.Stream.Dispose();
             }
-
-            // Compute hash for deduplication
-            var fileHash = await FileValidationHelper.ComputeSha256HashAsync(stream, cancellationToken);
-
-            var isDuplicate = await _context.CompanyCvDocuments
-                .AnyAsync(c => c.CompanyId == companyId && c.FileHash == fileHash, cancellationToken);
-
-            if (isDuplicate)
-            {
-                response.TotalDuplicatesSkipped++;
-                response.SkippedFileNames.Add($"{file.FileName} (Duplicate already exists in company pool)");
-                continue;
-            }
-
-            // Store in company workspace: companies/{companyId}
-            var storedPath = await _fileStorageService.UploadFileAsync(
-                stream,
-                file.FileName,
-                file.ContentType,
-                subFolder: $"companies/{companyId}",
-                cancellationToken: cancellationToken);
-
-            var cvDocument = new CompanyCvDocument
-            {
-                CompanyId = companyId,
-                FileName = Path.GetFileName(file.FileName),
-                StoredFilePath = storedPath,
-                ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType,
-                FileSizeBytes = file.Length,
-                ParsingStatus = CvParsingStatus.Uploaded,
-                FileHash = fileHash,
-                UploadedByUserId = userId.Value
-            };
-
-            _context.CompanyCvDocuments.Add(cvDocument);
-            response.TotalUploaded++;
-
-            response.UploadedFiles.Add(new CompanyCvDocumentDto
-            {
-                Id = cvDocument.Id,
-                CompanyId = cvDocument.CompanyId,
-                FileName = cvDocument.FileName,
-                ContentType = cvDocument.ContentType,
-                FileSizeBytes = cvDocument.FileSizeBytes,
-                ParsingStatus = cvDocument.ParsingStatus.ToString(),
-                FileHash = cvDocument.FileHash,
-                CandidateName = null,
-                UploadedAtUtc = cvDocument.CreatedAtUtc
-            });
         }
-
-        if (response.TotalUploaded > 0)
-        {
-            // Audit recruiter action
-            var auditLog = new RecruiterAction
-            {
-                CompanyId = companyId,
-                UserId = userId.Value,
-                ActionType = RecruiterActionType.UploadCv,
-                EntityType = "CompanyCvDocument",
-                EntityId = companyId,
-                Metadata = $"Uploaded {response.TotalUploaded} CV(s) to company pool. {response.TotalDuplicatesSkipped} duplicate(s) skipped."
-            };
-
-            _context.RecruiterActions.Add(auditLog);
-            await _context.SaveChangesAsync(cancellationToken);
-        }
-
-        return Ok(response);
     }
 
     /// <summary>
@@ -170,43 +77,11 @@ public class CompanyCvController : ControllerBase
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
-        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue)
-        {
-            return Forbid();
-        }
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue) return Forbid();
+        var companyId = _tenantContext.CompanyId.Value;
 
-        var companyId = _tenantContext.CompanyId!.Value;
-
-        var query = _context.CompanyCvDocuments
-            .Include(c => c.CompanyCandidate)
-            .Where(c => c.CompanyId == companyId);
-
-        if (status.HasValue)
-        {
-            query = query.Where(c => c.ParsingStatus == status.Value);
-        }
-
-        var totalCount = await query.CountAsync(cancellationToken);
-
-        var items = await query
-            .OrderByDescending(c => c.CreatedAtUtc)
-            .Skip((pageIndex - 1) * pageSize)
-            .Take(pageSize)
-            .Select(c => new CompanyCvDocumentDto
-            {
-                Id = c.Id,
-                CompanyId = c.CompanyId,
-                FileName = c.FileName,
-                ContentType = c.ContentType,
-                FileSizeBytes = c.FileSizeBytes,
-                ParsingStatus = c.ParsingStatus.ToString(),
-                FileHash = c.FileHash,
-                CandidateName = c.CompanyCandidate != null ? c.CompanyCandidate.FullName : null,
-                UploadedAtUtc = c.CreatedAtUtc
-            })
-            .ToListAsync(cancellationToken);
-
-        return Ok(new PagedResult<CompanyCvDocumentDto>(items, totalCount, pageIndex, pageSize));
+        var result = await _companyCvService.GetCompanyCvPoolAsync(companyId, pageIndex, pageSize, status, cancellationToken);
+        return Ok(result);
     }
 
     /// <summary>
@@ -218,30 +93,10 @@ public class CompanyCvController : ControllerBase
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
-        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue)
-        {
-            return Forbid();
-        }
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue) return Forbid();
+        var companyId = _tenantContext.CompanyId.Value;
 
-        var companyId = _tenantContext.CompanyId!.Value;
-
-        var cv = await _context.CompanyCvDocuments
-            .Include(c => c.CompanyCandidate)
-            .Where(c => c.Id == id && c.CompanyId == companyId)
-            .Select(c => new CompanyCvDocumentDto
-            {
-                Id = c.Id,
-                CompanyId = c.CompanyId,
-                FileName = c.FileName,
-                ContentType = c.ContentType,
-                FileSizeBytes = c.FileSizeBytes,
-                ParsingStatus = c.ParsingStatus.ToString(),
-                FileHash = c.FileHash,
-                CandidateName = c.CompanyCandidate != null ? c.CompanyCandidate.FullName : null,
-                UploadedAtUtc = c.CreatedAtUtc
-            })
-            .FirstOrDefaultAsync(cancellationToken);
-
+        var cv = await _companyCvService.GetCompanyCvByIdAsync(companyId, id, cancellationToken);
         if (cv == null) return NotFound("CV document not found in this company's pool.");
 
         return Ok(cv);
@@ -256,54 +111,13 @@ public class CompanyCvController : ControllerBase
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
-        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue)
-        {
-            return Forbid();
-        }
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue) return Forbid();
+        var companyId = _tenantContext.CompanyId.Value;
 
-        var companyId = _tenantContext.CompanyId!.Value;
+        var fileData = await _companyCvService.DownloadCompanyCvAsync(companyId, id, cancellationToken);
+        if (fileData == null) return NotFound("CV document or physical file not found.");
 
-        var cv = await _context.CompanyCvDocuments
-            .FirstOrDefaultAsync(c => c.Id == id && c.CompanyId == companyId, cancellationToken);
-
-        if (cv == null) return NotFound("CV document not found in this company's pool.");
-
-        var exists = await _fileStorageService.FileExistsAsync(cv.StoredFilePath, cancellationToken);
-        if (!exists)
-        {
-            return NotFound("The physical file is missing from company storage.");
-        }
-
-        var stream = await _fileStorageService.DownloadFileAsync(cv.StoredFilePath, cancellationToken);
-        return File(stream, cv.ContentType, cv.FileName);
-    }
-
-    /// <summary>
-    /// Deletes a CV document from the company's pool.
-    /// </summary>
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> DeleteCompanyCv(Guid id, CancellationToken cancellationToken)
-    {
-        var userId = _currentUserService.UserId;
-        if (userId == null) return Unauthorized();
-
-        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue)
-        {
-            return Forbid();
-        }
-
-        var cv = await _context.CompanyCvDocuments
-            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
-
-        if (cv == null) return NotFound("CV document not found in this company's pool.");
-
-        cv.IsDeleted = true;
-        cv.DeletedAtUtc = DateTime.UtcNow;
-
-        await _context.SaveChangesAsync(cancellationToken);
-        await _fileStorageService.DeleteFileAsync(cv.StoredFilePath, cancellationToken);
-
-        return NoContent();
+        return File(fileData.Value.Stream, fileData.Value.ContentType, fileData.Value.FileName);
     }
 }
 
