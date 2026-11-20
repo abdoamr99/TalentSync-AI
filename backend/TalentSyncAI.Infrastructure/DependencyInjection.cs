@@ -31,8 +31,11 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         // Security
+        services.Configure<TalentSyncAI.Application.Common.Models.JwtSettings>(
+            configuration.GetSection(TalentSyncAI.Application.Common.Models.JwtSettings.SectionName));
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
+        services.AddScoped<IAuthService, AuthService>();
 
         // AI & Search & Storage Services
         services.AddScoped<IAiService, StubAiService>();

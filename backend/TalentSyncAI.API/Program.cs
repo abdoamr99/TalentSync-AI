@@ -24,9 +24,13 @@ builder.Services.AddCors(options =>
     });
 });
 
-var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] ?? "SUPER_SECRET_KEY_FOR_LOCAL_DEV_TALENTSYNCAI_PLATFORM_2026_CHANGE_IN_PROD";
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "TalentSyncAI";
-var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "TalentSyncAI_Client";
+var jwtSettings = builder.Configuration.GetSection(TalentSyncAI.Application.Common.Models.JwtSettings.SectionName).Get<TalentSyncAI.Application.Common.Models.JwtSettings>()
+    ?? new TalentSyncAI.Application.Common.Models.JwtSettings();
+
+if (string.IsNullOrWhiteSpace(jwtSettings.SecretKey) || jwtSettings.SecretKey.Length < 32)
+{
+    throw new InvalidOperationException("JWT SecretKey must be configured and at least 32 characters long.");
+}
 
 builder.Services.AddAuthentication(options =>
 {
@@ -41,9 +45,9 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtIssuer,
-        ValidAudience = jwtAudience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey))
+        ValidIssuer = jwtSettings.Issuer,
+        ValidAudience = jwtSettings.Audience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
     };
 });
 
@@ -154,9 +158,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapGet("/", () => Results.Redirect("/swagger"));
-app.UseMiddleware<TenantMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<TenantMiddleware>();
 app.MapControllers();
 app.MapHealthChecks("/health");
 

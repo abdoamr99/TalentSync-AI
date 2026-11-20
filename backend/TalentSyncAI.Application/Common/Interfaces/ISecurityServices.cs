@@ -4,7 +4,7 @@ namespace TalentSyncAI.Application.Common.Interfaces;
 
 public interface IJwtTokenService
 {
-    string GenerateAccessToken(User user);
+    string GenerateAccessToken(User user, Guid? companyId = null);
     string GenerateRefreshToken();
 }
 

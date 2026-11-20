@@ -12,7 +12,7 @@ namespace TalentSyncAI.API.Controllers;
 
 [ApiController]
 [Route("api/company/cv")]
-// [Authorize] // Temporarily disabled for testing
+[Authorize(Roles = "Recruiter")]
 public class CompanyCvController : ControllerBase
 {
     private readonly IApplicationDbContext _context;
@@ -46,9 +46,9 @@ public class CompanyCvController : ControllerBase
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
-        if (!_tenantContext.HasTenant)
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue)
         {
-            return BadRequest("A valid company tenant header 'X-Company-Id' is required.");
+            return Forbid();
         }
 
         var companyId = _tenantContext.CompanyId!.Value;
@@ -170,9 +170,9 @@ public class CompanyCvController : ControllerBase
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
-        if (!_tenantContext.HasTenant)
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue)
         {
-            return BadRequest("A valid company tenant header 'X-Company-Id' is required.");
+            return Forbid();
         }
 
         var companyId = _tenantContext.CompanyId!.Value;
@@ -218,9 +218,9 @@ public class CompanyCvController : ControllerBase
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
-        if (!_tenantContext.HasTenant)
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue)
         {
-            return BadRequest("A valid company tenant header 'X-Company-Id' is required.");
+            return Forbid();
         }
 
         var companyId = _tenantContext.CompanyId!.Value;
@@ -256,9 +256,9 @@ public class CompanyCvController : ControllerBase
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
-        if (!_tenantContext.HasTenant)
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue)
         {
-            return BadRequest("A valid company tenant header 'X-Company-Id' is required.");
+            return Forbid();
         }
 
         var companyId = _tenantContext.CompanyId!.Value;
@@ -287,9 +287,9 @@ public class CompanyCvController : ControllerBase
         var userId = _currentUserService.UserId;
         if (userId == null) return Unauthorized();
 
-        if (!_tenantContext.HasTenant)
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue)
         {
-            return BadRequest("A valid company tenant header 'X-Company-Id' is required.");
+            return Forbid();
         }
 
         var cv = await _context.CompanyCvDocuments

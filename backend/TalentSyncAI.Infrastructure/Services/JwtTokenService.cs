@@ -2,31 +2,27 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using TalentSyncAI.Application.Common.Interfaces;
+using TalentSyncAI.Application.Common.Models;
 using TalentSyncAI.Domain.Entities;
 
 namespace TalentSyncAI.Infrastructure.Services;
 
 public class JwtTokenService : IJwtTokenService
 {
-    private readonly IConfiguration _configuration;
+    private readonly JwtSettings _jwtSettings;
 
-    public JwtTokenService(IConfiguration configuration)
+    public JwtTokenService(IOptions<JwtSettings> jwtOptions)
     {
-        _configuration = configuration;
+        _jwtSettings = jwtOptions.Value;
     }
 
-    public string GenerateAccessToken(User user)
+    public string GenerateAccessToken(User user, Guid? companyId = null)
     {
-        var secretKey = _configuration["Jwt:SecretKey"] ?? "SUPER_SECRET_KEY_FOR_LOCAL_DEV_TALENTSYNCAI_PLATFORM_2026";
-        var issuer = _configuration["Jwt:Issuer"] ?? "TalentSyncAI";
-        var audience = _configuration["Jwt:Audience"] ?? "TalentSyncAI_Client";
-        var expirationMinutes = int.TryParse(_configuration["Jwt:ExpirationMinutes"], out var minutes) ? minutes : 60;
-
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(secretKey);
+        var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
 
         var claims = new List<Claim>
         {
@@ -34,15 +30,21 @@ public class JwtTokenService : IJwtTokenService
             new(ClaimTypes.Email, user.Email),
             new(ClaimTypes.GivenName, user.FirstName),
             new(ClaimTypes.Surname, user.LastName),
+            new(ClaimTypes.Role, user.UserType.ToString()),
             new("user_type", user.UserType.ToString())
         };
+
+        if (companyId.HasValue)
+        {
+            claims.Add(new Claim("company_id", companyId.Value.ToString()));
+        }
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddMinutes(expirationMinutes),
-            Issuer = issuer,
-            Audience = audience,
+            Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes),
+            Issuer = _jwtSettings.Issuer,
+            Audience = _jwtSettings.Audience,
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
 
@@ -58,4 +60,3 @@ public class JwtTokenService : IJwtTokenService
         return Convert.ToBase64String(randomNumber);
     }
 }
-

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TalentSyncAI.Application.Common.Helpers;
@@ -11,7 +12,7 @@ namespace TalentSyncAI.API.Controllers;
 
 [ApiController]
 [Route("api/candidate/applications")]
-// [Authorize] // Temporarily disabled for Dev Testing
+[Authorize(Roles = "Candidate")]
 public class TargetJobApplicationsController : ControllerBase
 {
     private readonly IApplicationDbContext _context;
@@ -101,11 +102,10 @@ public class TargetJobApplicationsController : ControllerBase
                 break;
         }
 
-        // Resolve source CV (explicit, fallback for Swagger placeholder, or primary CV)
+        // Resolve source CV (explicit, or fallback to candidate's primary CV)
         Guid? sourceCvId = request.SourceCvId;
-        var swaggerDefaultGuid = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6");
 
-        if (sourceCvId.HasValue && sourceCvId.Value != Guid.Empty && sourceCvId.Value != swaggerDefaultGuid)
+        if (sourceCvId.HasValue && sourceCvId.Value != Guid.Empty)
         {
             var cvExists = await _context.CandidateResumes
                 .AnyAsync(c => c.Id == sourceCvId.Value && c.CandidateProfileId == profile.Id, cancellationToken);
@@ -484,19 +484,7 @@ public class TargetJobApplicationsController : ControllerBase
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
         if (user == null)
         {
-            user = new TalentSyncAI.Domain.Entities.User
-            {
-                Id = userId,
-                Email = "candidate@talentsync.ai",
-                NormalizedEmail = "CANDIDATE@TALENTSYNC.AI",
-                PasswordHash = "DEV_BYPASS_HASH",
-                FirstName = "Candidate",
-                LastName = "User",
-                UserType = TalentSyncAI.Domain.Enums.UserType.Candidate,
-                IsActive = true
-            };
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync(cancellationToken);
+            throw new UnauthorizedAccessException("Authenticated user does not exist in the database.");
         }
 
         profile = new CandidateProfile

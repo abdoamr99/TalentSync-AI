@@ -5,7 +5,6 @@ namespace TalentSyncAI.API.Middleware;
 public class TenantMiddleware
 {
     private readonly RequestDelegate _next;
-    private static readonly Guid DefaultDevCompanyId = Guid.Parse("01A1920B-BBBB-7000-8000-000000000001"); // TechCorp Solutions
 
     public TenantMiddleware(RequestDelegate next)
     {
@@ -14,18 +13,11 @@ public class TenantMiddleware
 
     public async Task InvokeAsync(HttpContext context, ITenantContext tenantContext)
     {
-        // 1. Check for explicit tenant header (X-Company-Id)
-        if (context.Request.Headers.TryGetValue("X-Company-Id", out var companyIdHeader))
+        // Tenant is resolved strictly from the authenticated user's company_id claim
+        var companyIdClaim = context.User.FindFirst("company_id")?.Value;
+        if (!string.IsNullOrEmpty(companyIdClaim) && Guid.TryParse(companyIdClaim, out var companyId))
         {
-            if (Guid.TryParse(companyIdHeader, out var companyId))
-            {
-                tenantContext.SetTenant(companyId);
-            }
-        }
-        else if (context.Request.Path.Value?.StartsWith("/api/company", StringComparison.OrdinalIgnoreCase) == true)
-        {
-            // DEV TESTING FALLBACK: Auto-set default test company for company endpoints
-            tenantContext.SetTenant(DefaultDevCompanyId);
+            tenantContext.SetTenant(companyId);
         }
 
         await _next(context);

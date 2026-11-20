@@ -11,7 +11,7 @@ namespace TalentSyncAI.API.Controllers;
 
 [ApiController]
 [Route("api/candidate/cv")]
-// [Authorize] // Temporarily disabled for testing
+[Authorize(Roles = "Candidate")]
 public class CandidateCvController : ControllerBase
 {
     private readonly IApplicationDbContext _context;
@@ -292,19 +292,7 @@ public class CandidateCvController : ControllerBase
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
         if (user == null)
         {
-            user = new User
-            {
-                Id = userId,
-                Email = "candidate@talentsync.ai",
-                NormalizedEmail = "CANDIDATE@TALENTSYNC.AI",
-                PasswordHash = "DEV_BYPASS_HASH",
-                FirstName = "Candidate",
-                LastName = "User",
-                UserType = UserType.Candidate,
-                IsActive = true
-            };
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync(cancellationToken);
+            throw new UnauthorizedAccessException("Authenticated user does not exist in the database.");
         }
 
         profile = new CandidateProfile

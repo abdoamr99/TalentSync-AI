@@ -68,23 +68,23 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<InterviewPreparation>().HasQueryFilter(e => !e.TargetJobApplication.IsDeleted);
         modelBuilder.Entity<CompanyRoleResearch>().HasQueryFilter(e => !e.TargetJobApplication.IsDeleted);
 
-        // 2. Strict Tenant-Scoped Filters for Company Pool
-        modelBuilder.Entity<CompanyCandidate>().HasQueryFilter(e => !e.IsDeleted && (!_tenantContext.HasTenant || e.CompanyId == _tenantContext.CompanyId));
-        modelBuilder.Entity<CompanyCvDocument>().HasQueryFilter(e => !e.IsDeleted && (!_tenantContext.HasTenant || e.CompanyId == _tenantContext.CompanyId));
-        modelBuilder.Entity<CompanyShortlist>().HasQueryFilter(e => !e.IsDeleted && (!_tenantContext.HasTenant || e.CompanyId == _tenantContext.CompanyId));
+        // 2. Strict Tenant-Scoped Filters for Company Pool (Fail-Closed)
+        modelBuilder.Entity<CompanyCandidate>().HasQueryFilter(e => !e.IsDeleted && e.CompanyId == _tenantContext.CompanyId);
+        modelBuilder.Entity<CompanyCvDocument>().HasQueryFilter(e => !e.IsDeleted && e.CompanyId == _tenantContext.CompanyId);
+        modelBuilder.Entity<CompanyShortlist>().HasQueryFilter(e => !e.IsDeleted && e.CompanyId == _tenantContext.CompanyId);
 
         // Matching Child Filters for CompanyCandidate
         modelBuilder.Entity<CompanyCandidateSkill>().HasQueryFilter(e => !e.CompanyCandidate.IsDeleted);
         modelBuilder.Entity<CompanyCandidateExperience>().HasQueryFilter(e => !e.CompanyCandidate.IsDeleted);
         modelBuilder.Entity<CompanyCandidateEducation>().HasQueryFilter(e => !e.CompanyCandidate.IsDeleted);
 
-        // Tenant Scoped Operations
-        modelBuilder.Entity<CompanyMember>().HasQueryFilter(e => !_tenantContext.HasTenant || e.CompanyId == _tenantContext.CompanyId);
-        modelBuilder.Entity<CandidateSearch>().HasQueryFilter(e => !_tenantContext.HasTenant || e.CompanyId == _tenantContext.CompanyId);
-        modelBuilder.Entity<CandidateSearchResult>().HasQueryFilter(e => !_tenantContext.HasTenant || e.CandidateSearch.CompanyId == _tenantContext.CompanyId);
+        // Tenant Scoped Operations (Fail-Closed)
+        modelBuilder.Entity<CompanyMember>().HasQueryFilter(e => e.CompanyId == _tenantContext.CompanyId);
+        modelBuilder.Entity<CandidateSearch>().HasQueryFilter(e => e.CompanyId == _tenantContext.CompanyId);
+        modelBuilder.Entity<CandidateSearchResult>().HasQueryFilter(e => e.CandidateSearch.CompanyId == _tenantContext.CompanyId);
         modelBuilder.Entity<CompanyShortlistCandidate>().HasQueryFilter(e => !e.AddedByUser.IsDeleted && !e.CompanyCandidate.IsDeleted);
-        modelBuilder.Entity<AiProcessingRun>().HasQueryFilter(e => !_tenantContext.HasTenant || e.CompanyId == _tenantContext.CompanyId);
-        modelBuilder.Entity<RecruiterAction>().HasQueryFilter(e => !_tenantContext.HasTenant || e.CompanyId == _tenantContext.CompanyId);
+        modelBuilder.Entity<AiProcessingRun>().HasQueryFilter(e => e.CompanyId == _tenantContext.CompanyId);
+        modelBuilder.Entity<RecruiterAction>().HasQueryFilter(e => e.CompanyId == _tenantContext.CompanyId);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

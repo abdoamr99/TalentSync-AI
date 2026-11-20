@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TalentSyncAI.Application.Common.Interfaces;
@@ -7,7 +8,7 @@ namespace TalentSyncAI.API.Controllers;
 
 [ApiController]
 [Route("api/company/audit")]
-// [Authorize] // Temporarily disabled for Dev Testing
+[Authorize(Roles = "Recruiter")]
 public class RecruiterAuditController : ControllerBase
 {
     private readonly IApplicationDbContext _context;
@@ -27,7 +28,8 @@ public class RecruiterAuditController : ControllerBase
         [FromQuery] int limit = 50,
         CancellationToken cancellationToken = default)
     {
-        var companyId = _tenantContext.CompanyId ?? Guid.Parse("01A191C8-1123-7744-8899-AABBCCDDEEFF");
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue) return Forbid();
+        var companyId = _tenantContext.CompanyId.Value;
 
         var logs = await _context.RecruiterActions
             .AsNoTracking()
@@ -49,4 +51,3 @@ public class RecruiterAuditController : ControllerBase
         return Ok(logs);
     }
 }
-

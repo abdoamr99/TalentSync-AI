@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TalentSyncAI.Application.Common.Interfaces;
@@ -9,7 +10,7 @@ namespace TalentSyncAI.API.Controllers;
 
 [ApiController]
 [Route("api/company/shortlists")]
-// [Authorize] // Temporarily disabled for Dev Testing
+[Authorize(Roles = "Recruiter")]
 public class CompanyShortlistsController : ControllerBase
 {
     private readonly IApplicationDbContext _context;
@@ -37,8 +38,10 @@ public class CompanyShortlistsController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Title))
             return BadRequest("Shortlist title is required.");
 
-        var companyId = _tenantContext.CompanyId ?? Guid.Parse("01A191C8-1123-7744-8899-AABBCCDDEEFF");
-        var userId = _currentUserService.UserId ?? Guid.Parse("01A1920B-BB54-78EE-AA25-895CE7C1248C");
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue) return Forbid();
+        var companyId = _tenantContext.CompanyId.Value;
+        var userId = _currentUserService.UserId;
+        if (!userId.HasValue) return Unauthorized();
 
         var shortlist = new CompanyShortlist
         {
@@ -52,7 +55,7 @@ public class CompanyShortlistsController : ControllerBase
         _context.RecruiterActions.Add(new RecruiterAction
         {
             CompanyId = companyId,
-            UserId = userId,
+            UserId = userId.Value,
             ActionType = RecruiterActionType.ShortlistCandidate,
             EntityType = "CompanyShortlist",
             EntityId = shortlist.Id,
@@ -78,7 +81,8 @@ public class CompanyShortlistsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<CompanyShortlistDto>>> ListShortlists(CancellationToken cancellationToken = default)
     {
-        var companyId = _tenantContext.CompanyId ?? Guid.Parse("01A191C8-1123-7744-8899-AABBCCDDEEFF");
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue) return Forbid();
+        var companyId = _tenantContext.CompanyId.Value;
 
         var list = await _context.CompanyShortlists
             .AsNoTracking()
@@ -103,7 +107,8 @@ public class CompanyShortlistsController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<CompanyShortlistDto>> GetShortlistById(Guid id, CancellationToken cancellationToken = default)
     {
-        var companyId = _tenantContext.CompanyId ?? Guid.Parse("01A191C8-1123-7744-8899-AABBCCDDEEFF");
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue) return Forbid();
+        var companyId = _tenantContext.CompanyId.Value;
 
         var shortlist = await _context.CompanyShortlists
             .Include(s => s.Candidates)
@@ -141,8 +146,10 @@ public class CompanyShortlistsController : ControllerBase
         [FromBody] AddCandidateToShortlistRequest request,
         CancellationToken cancellationToken = default)
     {
-        var companyId = _tenantContext.CompanyId ?? Guid.Parse("01A191C8-1123-7744-8899-AABBCCDDEEFF");
-        var userId = _currentUserService.UserId ?? Guid.Parse("01A1920B-BB54-78EE-AA25-895CE7C1248C");
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue) return Forbid();
+        var companyId = _tenantContext.CompanyId.Value;
+        var userId = _currentUserService.UserId;
+        if (!userId.HasValue) return Unauthorized();
 
         var shortlist = await _context.CompanyShortlists
             .FirstOrDefaultAsync(s => s.Id == id && s.CompanyId == companyId, cancellationToken);
@@ -163,7 +170,7 @@ public class CompanyShortlistsController : ControllerBase
         {
             CompanyShortlistId = id,
             CompanyCandidateId = candidate.Id,
-            AddedByUserId = userId,
+            AddedByUserId = userId.Value,
             Notes = request.Notes?.Trim(),
             AddedAtUtc = DateTime.UtcNow
         };
@@ -173,7 +180,7 @@ public class CompanyShortlistsController : ControllerBase
         _context.RecruiterActions.Add(new RecruiterAction
         {
             CompanyId = companyId,
-            UserId = userId,
+            UserId = userId.Value,
             ActionType = RecruiterActionType.ShortlistCandidate,
             EntityType = "CompanyCandidate",
             EntityId = candidate.Id,
@@ -203,7 +210,8 @@ public class CompanyShortlistsController : ControllerBase
         Guid candidateId,
         CancellationToken cancellationToken = default)
     {
-        var companyId = _tenantContext.CompanyId ?? Guid.Parse("01A191C8-1123-7744-8899-AABBCCDDEEFF");
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue) return Forbid();
+        var companyId = _tenantContext.CompanyId.Value;
 
         var entry = await _context.CompanyShortlistCandidates
             .Include(e => e.CompanyShortlist)
@@ -223,7 +231,8 @@ public class CompanyShortlistsController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteShortlist(Guid id, CancellationToken cancellationToken = default)
     {
-        var companyId = _tenantContext.CompanyId ?? Guid.Parse("01A191C8-1123-7744-8899-AABBCCDDEEFF");
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue) return Forbid();
+        var companyId = _tenantContext.CompanyId.Value;
 
         var shortlist = await _context.CompanyShortlists
             .FirstOrDefaultAsync(s => s.Id == id && s.CompanyId == companyId, cancellationToken);

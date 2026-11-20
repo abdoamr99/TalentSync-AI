@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TalentSyncAI.Application.Common.Interfaces;
@@ -9,7 +10,7 @@ namespace TalentSyncAI.API.Controllers;
 
 [ApiController]
 [Route("api/company/search")]
-// [Authorize] // Temporarily disabled for Dev Testing
+[Authorize(Roles = "Recruiter")]
 public class CompanySearchController : ControllerBase
 {
     private readonly IApplicationDbContext _context;
@@ -38,8 +39,10 @@ public class CompanySearchController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.NaturalLanguageQuery))
             return BadRequest("Natural language query cannot be empty.");
 
-        var companyId = _tenantContext.CompanyId ?? Guid.Parse("01A191C8-1123-7744-8899-AABBCCDDEEFF");
-        var userId = _currentUserService.UserId ?? Guid.Parse("01A1920B-BB54-78EE-AA25-895CE7C1248C");
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue) return Forbid();
+        var companyId = _tenantContext.CompanyId.Value;
+        var userId = _currentUserService.UserId;
+        if (!userId.HasValue) return Unauthorized();
 
         // Retrieve company candidates from tenant pool
         var candidates = await _context.CompanyCandidates
@@ -47,29 +50,6 @@ public class CompanySearchController : ControllerBase
             .Include(c => c.Experiences)
             .Where(c => c.CompanyId == companyId)
             .ToListAsync(cancellationToken);
-
-        // If company has no candidates yet, create realistic sample candidate so recruiter can test immediately
-        if (!candidates.Any())
-        {
-            var demoCandidate = new CompanyCandidate
-            {
-                CompanyId = companyId,
-                FullName = "Kareem Hassan",
-                Email = "kareem.hassan@example.com",
-                Phone = "+201012345678",
-                CurrentTitle = "Senior .NET & Cloud Engineer",
-                Location = "Cairo, Egypt",
-                YearsOfExperience = 5,
-                Summary = "Expert in designing resilient microservices with C#, .NET 10, Docker, and SQL Server."
-            };
-            demoCandidate.Skills.Add(new CompanyCandidateSkill { Name = "C# / .NET", YearsExperience = 5 });
-            demoCandidate.Skills.Add(new CompanyCandidateSkill { Name = "Docker", YearsExperience = 3 });
-            demoCandidate.Skills.Add(new CompanyCandidateSkill { Name = "Clean Architecture", YearsExperience = 4 });
-
-            _context.CompanyCandidates.Add(demoCandidate);
-            await _context.SaveChangesAsync(cancellationToken);
-            candidates.Add(demoCandidate);
-        }
 
         var queryTerms = request.NaturalLanguageQuery.ToLowerInvariant()
             .Split(new[] { ' ', ',', '.', ';', '?', '!', '\t' }, StringSplitOptions.RemoveEmptyEntries)
@@ -140,7 +120,7 @@ public class CompanySearchController : ControllerBase
         var searchRecord = new CandidateSearch
         {
             CompanyId = companyId,
-            PerformedByUserId = userId,
+            PerformedByUserId = userId.Value,
             NaturalLanguageQuery = request.NaturalLanguageQuery.Trim(),
             IsSavedSearch = request.IsSavedSearch,
             SavedSearchTitle = request.SavedSearchTitle?.Trim(),
@@ -167,7 +147,7 @@ public class CompanySearchController : ControllerBase
         _context.RecruiterActions.Add(new RecruiterAction
         {
             CompanyId = companyId,
-            UserId = userId,
+            UserId = userId.Value,
             ActionType = RecruiterActionType.NaturalLanguageSearch,
             EntityType = "CandidateSearch",
             EntityId = searchRecord.Id,
@@ -195,7 +175,8 @@ public class CompanySearchController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<CandidateSearchDto>>> ListSearches(CancellationToken cancellationToken = default)
     {
-        var companyId = _tenantContext.CompanyId ?? Guid.Parse("01A191C8-1123-7744-8899-AABBCCDDEEFF");
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue) return Forbid();
+        var companyId = _tenantContext.CompanyId.Value;
 
         var searches = await _context.CandidateSearches
             .AsNoTracking()
@@ -223,7 +204,8 @@ public class CompanySearchController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<CandidateSearchDto>> GetSearchById(Guid id, CancellationToken cancellationToken = default)
     {
-        var companyId = _tenantContext.CompanyId ?? Guid.Parse("01A191C8-1123-7744-8899-AABBCCDDEEFF");
+        if (!_tenantContext.HasTenant || !_tenantContext.CompanyId.HasValue) return Forbid();
+        var companyId = _tenantContext.CompanyId.Value;
 
         var search = await _context.CandidateSearches
             .Include(s => s.Results)
