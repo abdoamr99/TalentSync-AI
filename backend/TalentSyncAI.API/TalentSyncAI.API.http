@@ -1,0 +1,38 @@
+@HostAddress = http://localhost:5239
+@AuthToken = 
+
+### 1. Health Checks
+GET {{HostAddress}}/health/live
+
+### 2. Readiness Check (DB)
+GET {{HostAddress}}/health/ready
+
+### 3. Register Candidate
+POST {{HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "candidate@example.com",
+  "password": "CandidatePassword123!",
+  "firstName": "John",
+  "lastName": "Doe",
+  "userType": "Candidate"
+}
+
+### 4. Login Candidate
+# @name login
+POST {{HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "candidate@example.com",
+  "password": "CandidatePassword123!"
+}
+
+### 5. List Candidate CVs (requires JWT token)
+GET {{HostAddress}}/api/candidate/cv
+Authorization: Bearer {{AuthToken}}
+
+### 6. List Target Job Applications
+GET {{HostAddress}}/api/candidate/applications
+Authorization: Bearer {{AuthToken}}
